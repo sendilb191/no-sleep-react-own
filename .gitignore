@@ -1,0 +1,26 @@
+# OSX
+.DS_Store
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Android
+/android/build/
+/android/app/build/
+/android/.gradle/
+/android/app/release/
+*.apk
+*.aab
+
+# iOS
+/ios/Pods/
+/ios/build/
+
+# Misc
+.vscode/
+.idea/
+*.iml
+*.log
+.env
