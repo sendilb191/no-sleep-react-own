@@ -1,4 +1,5 @@
-*.jar binary
-*.apk binary
-*.aab binary
-*.keystore binary
+*.jar binary -diff
+*.apk binary -diff
+*.aab binary -diff
+*.keystore binary -diff
+android/gradle/wrapper/gradle-wrapper.jar binary -diff
