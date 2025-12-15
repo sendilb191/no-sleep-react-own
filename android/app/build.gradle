@@ -3,6 +3,13 @@ apply plugin: "org.jetbrains.kotlin.android"
 
 def enableProguardInReleaseBuilds = false
 
+project.ext.react = [
+    bundleAssetName: "index.android.bundle",
+    bundleInRelease: true,
+    entryFile: "index.js",
+    root: "../../"
+]
+
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
 
@@ -45,6 +52,12 @@ android {
         pickFirst 'lib/armeabi-v7a/libc++_shared.so'
         pickFirst 'lib/arm64-v8a/libc++_shared.so'
     }
+    
+    sourceSets {
+        main {
+            assets.srcDirs = ['src/main/assets']
+        }
+    }
 }
 
 dependencies {
@@ -52,4 +65,32 @@ dependencies {
     implementation("com.facebook.react:hermes-android:0.73.2")
     implementation("com.facebook.soloader:soloader:0.10.5")
     implementation("androidx.appcompat:appcompat:1.6.1")
+}
+
+task bundleReleaseJsAndAssets {
+    description = "Bundle JS and assets for release"
+    doLast {
+        def bundleDir = file("$buildDir/intermediates/assets/release")
+        bundleDir.mkdirs()
+        
+        def reactRoot = file(project.ext.react.root)
+        def entryFile = file("${reactRoot}/${project.ext.react.entryFile}")
+        def bundleFile = file("${bundleDir}/${project.ext.react.bundleAssetName}")
+        
+        exec {
+            workingDir reactRoot
+            commandLine "npx", "react-native", "bundle",
+                "--platform", "android",
+                "--dev", "false",
+                "--entry-file", entryFile,
+                "--bundle-output", bundleFile,
+                "--assets-dest", bundleDir
+        }
+    }
+}
+
+tasks.whenTaskAdded { task ->
+    if (task.name == 'mergeReleaseAssets') {
+        task.dependsOn bundleReleaseJsAndAssets
+    }
 }
