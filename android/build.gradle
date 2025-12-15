@@ -4,6 +4,7 @@ buildscript {
         minSdkVersion = 23
         compileSdkVersion = 34
         targetSdkVersion = 34
+        ndkVersion = "25.1.8937393"
         kotlinVersion = "2.0.21"
     }
     repositories {
@@ -16,10 +17,15 @@ buildscript {
     }
 }
 
+apply plugin: "com.facebook.react.rootproject"
+
 allprojects {
     repositories {
         google()
         mavenCentral()
+        maven {
+            url(new File(["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim(), "../android"))
+        }
         maven { url "https://www.jitpack.io" }
     }
 }
