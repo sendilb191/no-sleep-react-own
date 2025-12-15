@@ -15,6 +15,10 @@ android {
         versionName "1.0"
     }
     
+    buildFeatures {
+        buildConfig = true
+    }
+    
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
