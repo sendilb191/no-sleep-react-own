@@ -7,6 +7,7 @@ import {
   StatusBar,
   Button,
   NativeModules,
+  Alert,
 } from "react-native";
 
 const { DeviceLock } = NativeModules;
@@ -16,7 +17,7 @@ function App() {
     if (DeviceLock && DeviceLock.lockNow) {
       DeviceLock.lockNow();
     } else {
-      console.warn("Device lock functionality is not available.");
+      Alert.alert("Warning", "Device lock functionality is not available.");
     }
   };
 
