@@ -26,7 +26,7 @@ function App() {
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       <View style={styles.content}>
         <Text style={styles.title}>Hello! 👋</Text>
-        <Text style={styles.name}>Your Name Here</Text>
+        <Text style={styles.name}>Sendil Bala</Text>
         <Text style={styles.subtitle}>Welcome to my React Native App</Text>
         <Button title="Lock Device" onPress={lockDevice} />
       </View>
