@@ -19,6 +19,23 @@
     "@react-native/metro-config": "0.73.2",
     "metro-react-native-babel-preset": "0.77.0"
   },
+  "overrides": {
+    "ip": "2.0.1",
+    "react-native": {
+      "@react-native-community/cli": "12.3.7",
+      "@react-native-community/cli-clean": "12.3.7",
+      "@react-native-community/cli-config": "12.3.7",
+      "@react-native-community/cli-debugger-ui": "12.3.7",
+      "@react-native-community/cli-doctor": "12.3.7",
+      "@react-native-community/cli-hermes": "12.3.7",
+      "@react-native-community/cli-platform-android": "12.3.7",
+      "@react-native-community/cli-platform-ios": "12.3.7",
+      "@react-native-community/cli-plugin-metro": "12.3.7",
+      "@react-native-community/cli-server-api": "12.3.7",
+      "@react-native-community/cli-tools": "12.3.7",
+      "@react-native-community/cli-types": "12.3.7"
+    }
+  },
   "engines": {
     "node": ">=18"
   }
