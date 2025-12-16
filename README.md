@@ -7,6 +7,7 @@ A React Native Android application with automated CI/CD deployment. Build APKs a
 - Customizable welcome screen
 - Device lock integration with automatic device administrator prompt
 - Built-in stopwatch with start, pause, and reset controls
+- Timed app lock scheduler (1-5 hours plus minute increments)
 - Hermes JavaScript engine for performance
 - Automated APK builds via GitHub Actions
 - No Android Studio required
@@ -55,6 +56,12 @@ A React Native Android application with automated CI/CD deployment. Build APKs a
 
 - Tap **Start** to begin counting, **Pause** to hold the current elapsed time, and **Reset** to clear the counter.
 - The stopwatch runs entirely on-device and keeps time while the screen remains on.
+
+### Timed App Lock
+
+- Select between **1 and 5 hours** and add minutes (in 5-minute steps) to schedule an automatic device lock.
+- Press **Activate App Lock** to start the countdown; the debug panel shows the remaining time and any device-admin warnings.
+- Use **Cancel Scheduled Lock** to stop the countdown before it triggers.
 
 ## Documentation
 
