@@ -5,6 +5,8 @@ A React Native Android application with automated CI/CD deployment. Build APKs a
 ## Features
 
 - Customizable welcome screen
+- Device lock integration with automatic device administrator prompt
+- Built-in stopwatch with start, pause, and reset controls
 - Hermes JavaScript engine for performance
 - Automated APK builds via GitHub Actions
 - No Android Studio required
@@ -40,6 +42,19 @@ A React Native Android application with automated CI/CD deployment. Build APKs a
    - Go to **Releases** tab in your repository
    - Download `app-release.apk`
    - Install on Android device
+
+## Usage Tips
+
+### Device Administrator Permission
+
+- The first time you open the app it automatically launches the Android device administrator prompt.
+- Grant the permission so the **Lock Device** button can immediately lock the screen on demand.
+- You can revisit the prompt at any time from the in-app dialog if you previously skipped it.
+
+### Stopwatch Controls
+
+- Tap **Start** to begin counting, **Pause** to hold the current elapsed time, and **Reset** to clear the counter.
+- The stopwatch runs entirely on-device and keeps time while the screen remains on.
 
 ## Documentation
 

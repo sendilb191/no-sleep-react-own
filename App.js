@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   SafeAreaView,
   StyleSheet,
@@ -14,10 +14,60 @@ const { DeviceLock } = NativeModules;
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [isStopwatchRunning, setIsStopwatchRunning] = useState(false);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
     checkAndRequestAdminPermission();
   }, []);
+
+  useEffect(() => {
+    if (!isStopwatchRunning) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
+    }
+
+    intervalRef.current = setInterval(() => {
+      setElapsedMs((prev) => prev + 1000);
+    }, 1000);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [isStopwatchRunning]);
+
+  const formatElapsedTime = (ms) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const seconds = (totalSeconds % 60).toString().padStart(2, "0");
+    return `${minutes}:${seconds}`;
+  };
+
+  const startStopwatch = () => {
+    if (!isStopwatchRunning) {
+      setIsStopwatchRunning(true);
+    }
+  };
+
+  const pauseStopwatch = () => {
+    if (isStopwatchRunning) {
+      setIsStopwatchRunning(false);
+    }
+  };
+
+  const resetStopwatch = () => {
+    setIsStopwatchRunning(false);
+    setElapsedMs(0);
+  };
 
   const checkAndRequestAdminPermission = async () => {
     if (DeviceLock && DeviceLock.isAdminActive) {
@@ -34,6 +84,7 @@ function App() {
       }
     }
   };
+
   const lockDevice = async () => {
     if (DeviceLock && DeviceLock.lockNow) {
       try {
@@ -88,6 +139,35 @@ function App() {
             ⚠️ Device admin permission required
           </Text>
         )}
+        <View style={styles.stopwatchContainer}>
+          <Text style={styles.stopwatchLabel}>Stopwatch</Text>
+          <Text style={styles.stopwatchValue}>
+            {formatElapsedTime(elapsedMs)}
+          </Text>
+          <View style={styles.buttonRow}>
+            <View style={styles.buttonWrapper}>
+              <Button
+                title="Start"
+                onPress={startStopwatch}
+                disabled={isStopwatchRunning}
+              />
+            </View>
+            <View style={styles.buttonWrapper}>
+              <Button
+                title="Pause"
+                onPress={pauseStopwatch}
+                disabled={!isStopwatchRunning}
+              />
+            </View>
+            <View style={styles.buttonWrapper}>
+              <Button
+                title="Reset"
+                onPress={resetStopwatch}
+                disabled={!elapsedMs && !isStopwatchRunning}
+              />
+            </View>
+          </View>
+        </View>
         <Button title="Lock Device" onPress={lockDevice} />
       </View>
     </SafeAreaView>
@@ -129,6 +209,36 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 15,
     paddingHorizontal: 20,
+  },
+  stopwatchContainer: {
+    width: "100%",
+    marginBottom: 20,
+    backgroundColor: "#F5F5F7",
+    borderRadius: 12,
+    padding: 20,
+    alignItems: "center",
+  },
+  stopwatchLabel: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 8,
+  },
+  stopwatchValue: {
+    fontSize: 42,
+    fontWeight: "bold",
+    color: "#007AFF",
+    marginBottom: 16,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  buttonWrapper: {
+    flex: 1,
+    marginHorizontal: 6,
+    minWidth: 90,
   },
 });
 
