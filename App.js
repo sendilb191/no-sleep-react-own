@@ -7,28 +7,22 @@ import {
   StatusBar,
   Button,
   NativeModules,
-  Pressable,
   NativeEventEmitter,
   Alert,
   AppState,
   ScrollView,
 } from "react-native";
+import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 
 const { DeviceLock } = NativeModules;
 
-const HOURS_OPTIONS = [1, 2, 3, 4, 5];
-const MINUTE_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
-
 function App() {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [isStopwatchRunning, setIsStopwatchRunning] = useState(false);
-  const intervalRef = useRef(null);
   const hasPromptedForAdmin = useRef(false);
   const [debugLogs, setDebugLogs] = useState([]);
   const countdownIntervalRef = useRef(null);
-  const [selectedHours, setSelectedHours] = useState(HOURS_OPTIONS[0]);
-  const [selectedMinutes, setSelectedMinutes] = useState(MINUTE_OPTIONS[0]);
+  const [selectedHours, setSelectedHours] = useState(0);
+  const [selectedMinutes, setSelectedMinutes] = useState(1);
   const [isLockScheduled, setIsLockScheduled] = useState(false);
   const [scheduledRemainingMs, setScheduledRemainingMs] = useState(0);
 
@@ -124,53 +118,6 @@ function App() {
     };
   }, [appendLog, checkAdminStatus]);
 
-  useEffect(() => {
-    if (!isStopwatchRunning) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      return;
-    }
-
-    intervalRef.current = setInterval(() => {
-      setElapsedMs((prev) => prev + 1000);
-    }, 1000);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isStopwatchRunning]);
-
-  const formatElapsedTime = (ms) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60)
-      .toString()
-      .padStart(2, "0");
-    const seconds = (totalSeconds % 60).toString().padStart(2, "0");
-    return `${minutes}:${seconds}`;
-  };
-
-  const startStopwatch = () => {
-    if (!isStopwatchRunning) {
-      setIsStopwatchRunning(true);
-    }
-  };
-
-  const pauseStopwatch = () => {
-    if (isStopwatchRunning) {
-      setIsStopwatchRunning(false);
-    }
-  };
-
-  const resetStopwatch = () => {
-    setIsStopwatchRunning(false);
-    setElapsedMs(0);
-  };
-
   const stopCountdown = useCallback(() => {
     if (countdownIntervalRef.current) {
       clearInterval(countdownIntervalRef.current);
@@ -186,9 +133,36 @@ function App() {
 
   const formatScheduledDuration = useCallback(() => {
     const hoursText = `${selectedHours}h`;
-    const minutesText = `${selectedMinutes}m`;
+    const minutesText = `${selectedMinutes.toString().padStart(2, "0")}m`;
     return `${hoursText} ${minutesText}`;
   }, [selectedHours, selectedMinutes]);
+
+  const openTimePicker = useCallback(() => {
+    const initial = new Date();
+    initial.setHours(selectedHours);
+    initial.setMinutes(selectedMinutes);
+    initial.setSeconds(0);
+    initial.setMilliseconds(0);
+
+    DateTimePickerAndroid.open({
+      mode: "time",
+      is24Hour: true,
+      value: initial,
+      onChange: (_, selectedDate) => {
+        if (!selectedDate) {
+          appendLog("Time picker dismissed without selection");
+          return;
+        }
+
+        const hours = selectedDate.getHours();
+        const minutes = selectedDate.getMinutes();
+        setSelectedHours(hours);
+        setSelectedMinutes(minutes);
+        const minutesLabel = minutes.toString().padStart(2, "0");
+        appendLog(`Time picker -> selected ${hours}h ${minutesLabel}m`);
+      },
+    });
+  }, [appendLog, selectedHours, selectedMinutes]);
 
   const formatRemainingTime = (ms) => {
     const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -285,7 +259,6 @@ function App() {
       setScheduledRemainingMs((prev) => Math.max(prev - 1000, 0));
     }, 1000);
   }, [
-    DeviceLock,
     appendLog,
     formatScheduledDuration,
     selectedHours,
@@ -326,135 +299,69 @@ function App() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-      <View style={styles.content}>
-        <Text style={styles.title}>Hello! 👋</Text>
-        <Text style={styles.name}>Sendil Bala</Text>
-        <Text style={styles.subtitle}>Welcome to my React Native App</Text>
-        {!isAdmin && (
-          <Text style={styles.warning}>
-            ⚠️ Device admin permission required
-          </Text>
-        )}
-        <View style={styles.stopwatchContainer}>
-          <Text style={styles.stopwatchLabel}>Stopwatch</Text>
-          <Text style={styles.stopwatchValue}>
-            {formatElapsedTime(elapsedMs)}
-          </Text>
-          <View style={styles.buttonRow}>
-            <View style={styles.buttonWrapper}>
-              <Button
-                title="Start"
-                onPress={startStopwatch}
-                disabled={isStopwatchRunning}
-              />
-            </View>
-            <View style={styles.buttonWrapper}>
-              <Button
-                title="Pause"
-                onPress={pauseStopwatch}
-                disabled={!isStopwatchRunning}
-              />
-            </View>
-            <View style={styles.buttonWrapper}>
-              <Button
-                title="Reset"
-                onPress={resetStopwatch}
-                disabled={!elapsedMs && !isStopwatchRunning}
-              />
-            </View>
-          </View>
-        </View>
-        <View style={styles.timerContainer}>
-          <Text style={styles.timerTitle}>Timed App Lock</Text>
-          <Text style={styles.timerDescription}>
-            Choose how long to wait before the app locks the device
-            automatically.
-          </Text>
-          <Text style={styles.selectorLabel}>Hours</Text>
-          <View style={styles.selectorRow}>
-            {HOURS_OPTIONS.map((option) => {
-              const isSelected = selectedHours === option;
-              return (
-                <Pressable
-                  key={`hours-${option}`}
-                  onPress={() => setSelectedHours(option)}
-                  style={[styles.chip, isSelected && styles.chipSelected]}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      isSelected && styles.chipTextSelected,
-                    ]}
-                  >
-                    {`${option}h`}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          <Text style={styles.selectorLabel}>Minutes</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.selectorScroll}
-            contentContainerStyle={styles.selectorScrollContent}
-          >
-            {MINUTE_OPTIONS.map((option) => {
-              const isSelected = selectedMinutes === option;
-              return (
-                <Pressable
-                  key={`minutes-${option}`}
-                  onPress={() => setSelectedMinutes(option)}
-                  style={[styles.chip, isSelected && styles.chipSelected]}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      isSelected && styles.chipTextSelected,
-                    ]}
-                  >
-                    {`${option.toString().padStart(2, "0")}m`}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-          <Text style={styles.timerSummary}>
-            Selected duration: {formatScheduledDuration()}
-          </Text>
-          {isLockScheduled && (
-            <Text style={styles.countdown}>
-              Locking in {formatRemainingTime(scheduledRemainingMs)}
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.content}>
+          <Text style={styles.title}>Hello! 👋</Text>
+          <Text style={styles.name}>Sendil Bala</Text>
+          <Text style={styles.subtitle}>Welcome to my React Native App</Text>
+          {!isAdmin && (
+            <Text style={styles.warning}>
+              ⚠️ Device admin permission required
             </Text>
           )}
-          <View style={styles.scheduleButtonWrapper}>
-            <Button
-              title={
-                isLockScheduled ? "Cancel Scheduled Lock" : "Activate App Lock"
-              }
-              onPress={isLockScheduled ? cancelScheduledLock : scheduleLock}
-            />
+          <View style={styles.timerContainer}>
+            <Text style={styles.timerTitle}>Timed App Lock</Text>
+            <Text style={styles.timerDescription}>
+              Choose a delay (up to 24 hours with 1-minute precision) before the
+              app locks the device automatically.
+            </Text>
+            <Text style={styles.selectorLabel}>Delay</Text>
+            <Text style={styles.timerSummary}>
+              Selected duration: {formatScheduledDuration()}
+            </Text>
+            <View style={styles.timePickerButtonWrapper}>
+              <Button title="Pick Delay" onPress={openTimePicker} />
+            </View>
+            {isLockScheduled && (
+              <Text style={styles.countdown}>
+                Locking in {formatRemainingTime(scheduledRemainingMs)}
+              </Text>
+            )}
+            <View style={styles.scheduleButtonWrapper}>
+              <Button
+                title={
+                  isLockScheduled
+                    ? "Cancel Scheduled Lock"
+                    : "Activate App Lock"
+                }
+                onPress={isLockScheduled ? cancelScheduledLock : scheduleLock}
+              />
+            </View>
+          </View>
+          <Button title="Lock Device" onPress={lockDevice} />
+          <View style={styles.logsContainer}>
+            <Text style={styles.logsTitle}>Debug Logs</Text>
+            <ScrollView
+              style={styles.logs}
+              contentContainerStyle={styles.logsContent}
+            >
+              {debugLogs.length === 0 ? (
+                <Text style={styles.logLine}>No logs yet</Text>
+              ) : (
+                debugLogs.map((log, index) => (
+                  <Text key={index} style={styles.logLine}>
+                    {log}
+                  </Text>
+                ))
+              )}
+            </ScrollView>
           </View>
         </View>
-        <Button title="Lock Device" onPress={lockDevice} />
-        <View style={styles.logsContainer}>
-          <Text style={styles.logsTitle}>Debug Logs</Text>
-          <ScrollView
-            style={styles.logs}
-            contentContainerStyle={styles.logsContent}
-          >
-            {debugLogs.length === 0 ? (
-              <Text style={styles.logLine}>No logs yet</Text>
-            ) : (
-              debugLogs.map((log, index) => (
-                <Text key={index} style={styles.logLine}>
-                  {log}
-                </Text>
-              ))
-            )}
-          </ScrollView>
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -464,11 +371,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#ffffff",
   },
-  content: {
+  scrollContainer: {
     flex: 1,
-    justifyContent: "center",
+    width: "100%",
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
     alignItems: "center",
-    padding: 20,
+  },
+  content: {
+    width: "100%",
+    alignItems: "center",
   },
   title: {
     fontSize: 32,
@@ -495,26 +409,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     paddingHorizontal: 20,
   },
-  stopwatchContainer: {
-    width: "100%",
-    marginBottom: 20,
-    backgroundColor: "#F5F5F7",
-    borderRadius: 12,
-    padding: 20,
-    alignItems: "center",
-  },
-  stopwatchLabel: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
-  },
-  stopwatchValue: {
-    fontSize: 42,
-    fontWeight: "bold",
-    color: "#007AFF",
-    marginBottom: 16,
-  },
   timerContainer: {
     width: "100%",
     marginBottom: 20,
@@ -539,40 +433,8 @@ const styles = StyleSheet.create({
     color: "#0A1F44",
     marginBottom: 8,
   },
-  selectorRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 16,
-  },
-  selectorScroll: {
-    maxHeight: 48,
-    marginBottom: 16,
-  },
-  selectorScrollContent: {
-    alignItems: "center",
-    paddingRight: 4,
-  },
-  chip: {
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: "#B0C4FF",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginRight: 8,
-    marginBottom: 8,
-    backgroundColor: "#FFFFFF",
-  },
-  chipSelected: {
-    backgroundColor: "#1D4ED8",
-    borderColor: "#1D4ED8",
-  },
-  chipText: {
-    fontSize: 14,
-    color: "#1D4ED8",
-    fontWeight: "600",
-  },
-  chipTextSelected: {
-    color: "#FFFFFF",
+  timePickerButtonWrapper: {
+    marginBottom: 12,
   },
   timerSummary: {
     fontSize: 14,
@@ -589,16 +451,6 @@ const styles = StyleSheet.create({
   scheduleButtonWrapper: {
     marginTop: 4,
     marginBottom: 8,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  buttonWrapper: {
-    flex: 1,
-    marginHorizontal: 6,
-    minWidth: 90,
   },
   logsContainer: {
     width: "100%",
