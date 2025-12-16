@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
   StyleSheet,
@@ -13,16 +13,63 @@ import {
 const { DeviceLock } = NativeModules;
 
 function App() {
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    checkAndRequestAdminPermission();
+  }, []);
+
+  const checkAndRequestAdminPermission = async () => {
+    if (DeviceLock && DeviceLock.isAdminActive) {
+      try {
+        const active = await DeviceLock.isAdminActive();
+        setIsAdmin(active);
+
+        if (!active) {
+          // Request admin permission on first launch
+          await DeviceLock.requestAdminPermission();
+        }
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+      }
+    }
+  };
   const lockDevice = async () => {
     if (DeviceLock && DeviceLock.lockNow) {
       try {
         await DeviceLock.lockNow();
+        setIsAdmin(true);
       } catch (error) {
-        const message =
-          error?.code === "DEVICE_ADMIN_NOT_ACTIVE"
-            ? "Enable this app as a device administrator in Android settings to allow device locking."
-            : error?.message ?? "Failed to lock the device.";
-        Alert.alert("Unable to lock device", message);
+        if (error?.code === "DEVICE_ADMIN_NOT_ACTIVE") {
+          Alert.alert(
+            "Device Administrator Required",
+            "This app needs device administrator permission to lock your device.",
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+              },
+              {
+                text: "Grant Permission",
+                onPress: async () => {
+                  try {
+                    await DeviceLock.requestAdminPermission();
+                  } catch (e) {
+                    Alert.alert(
+                      "Error",
+                      "Failed to open device admin settings."
+                    );
+                  }
+                },
+              },
+            ]
+          );
+        } else {
+          Alert.alert(
+            "Unable to lock device",
+            error?.message ?? "Failed to lock the device."
+          );
+        }
       }
     } else {
       Alert.alert("Warning", "Device lock functionality is not available.");
@@ -36,6 +83,11 @@ function App() {
         <Text style={styles.title}>Hello! 👋</Text>
         <Text style={styles.name}>Sendil Bala</Text>
         <Text style={styles.subtitle}>Welcome to my React Native App</Text>
+        {!isAdmin && (
+          <Text style={styles.warning}>
+            ⚠️ Device admin permission required
+          </Text>
+        )}
         <Button title="Lock Device" onPress={lockDevice} />
       </View>
     </SafeAreaView>
@@ -70,6 +122,13 @@ const styles = StyleSheet.create({
     color: "#666",
     textAlign: "center",
     marginBottom: 20,
+  },
+  warning: {
+    fontSize: 14,
+    color: "#FF3B30",
+    textAlign: "center",
+    marginBottom: 15,
+    paddingHorizontal: 20,
   },
 });
 
