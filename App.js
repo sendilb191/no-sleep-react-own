@@ -13,9 +13,17 @@ import {
 const { DeviceLock } = NativeModules;
 
 function App() {
-  const lockDevice = () => {
+  const lockDevice = async () => {
     if (DeviceLock && DeviceLock.lockNow) {
-      DeviceLock.lockNow();
+      try {
+        await DeviceLock.lockNow();
+      } catch (error) {
+        const message =
+          error?.code === "DEVICE_ADMIN_NOT_ACTIVE"
+            ? "Enable this app as a device administrator in Android settings to allow device locking."
+            : error?.message ?? "Failed to lock the device.";
+        Alert.alert("Unable to lock device", message);
+      }
     } else {
       Alert.alert("Warning", "Device lock functionality is not available.");
     }
