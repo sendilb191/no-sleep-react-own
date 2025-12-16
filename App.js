@@ -7,8 +7,10 @@ import {
   StatusBar,
   Button,
   NativeModules,
+  NativeEventEmitter,
   Alert,
   AppState,
+  ScrollView,
 } from "react-native";
 
 const { DeviceLock } = NativeModules;
@@ -19,6 +21,12 @@ function App() {
   const [isStopwatchRunning, setIsStopwatchRunning] = useState(false);
   const intervalRef = useRef(null);
   const hasPromptedForAdmin = useRef(false);
+  const [debugLogs, setDebugLogs] = useState([]);
+
+  const appendLog = useCallback((message) => {
+    const timestamp = new Date().toISOString();
+    setDebugLogs((prev) => [`${timestamp} - ${message}`, ...prev].slice(0, 50));
+  }, []);
 
   const checkAdminStatus = useCallback(async () => {
     if (DeviceLock && DeviceLock.isAdminActive) {
@@ -26,15 +34,18 @@ function App() {
         const active = await DeviceLock.isAdminActive();
         const enabled = Boolean(active);
         setIsAdmin(enabled);
+        appendLog(`checkAdminStatus -> ${enabled ? "ACTIVE" : "INACTIVE"}`);
         return enabled;
       } catch (error) {
         console.error("Error checking admin status:", error);
+        appendLog(`checkAdminStatus error: ${error?.message ?? "unknown"}`);
       }
     }
 
     setIsAdmin(false);
+    appendLog("checkAdminStatus -> fallback INACTIVE");
     return false;
-  }, []);
+  }, [appendLog]);
 
   const promptForAdmin = useCallback(async () => {
     if (DeviceLock && DeviceLock.requestAdminPermission) {
@@ -42,34 +53,59 @@ function App() {
         const granted = await DeviceLock.requestAdminPermission();
         if (granted) {
           setIsAdmin(true);
+          appendLog("promptForAdmin -> granted");
+        } else {
+          appendLog("promptForAdmin -> launched settings (waiting for result)");
+          setTimeout(() => {
+            checkAdminStatus();
+          }, 500);
         }
         return granted;
       } catch (error) {
         console.error("Error requesting admin permission:", error);
+        appendLog(`promptForAdmin error: ${error?.message ?? "unknown"}`);
         throw error;
       }
     }
 
     return false;
-  }, []);
+  }, [checkAdminStatus, appendLog]);
+
+  useEffect(() => {
+    if (!DeviceLock) {
+      return undefined;
+    }
+
+    const emitter = new NativeEventEmitter(DeviceLock);
+    const subscription = emitter.addListener("DeviceLockLog", (message) => {
+      appendLog(`[native] ${message}`);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [appendLog]);
 
   useEffect(() => {
     (async () => {
       const active = await checkAdminStatus();
       if (!active && !hasPromptedForAdmin.current) {
         hasPromptedForAdmin.current = true;
+        appendLog("Initial admin check inactive -> prompting user");
         try {
           await promptForAdmin();
         } catch (error) {
           Alert.alert("Error", "Failed to open device admin settings.");
+          appendLog("Initial prompt failed to launch settings");
         }
       }
     })();
-  }, [checkAdminStatus, promptForAdmin]);
+  }, [checkAdminStatus, promptForAdmin, appendLog]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
+        appendLog("AppState change -> active, refreshing admin state");
         checkAdminStatus();
       }
     });
@@ -131,8 +167,10 @@ function App() {
       try {
         await DeviceLock.lockNow();
         setIsAdmin(true);
+        appendLog("lockDevice -> success");
       } catch (error) {
         if (error?.code === "DEVICE_ADMIN_NOT_ACTIVE") {
+          appendLog("lockDevice -> admin not active, prompting");
           Alert.alert(
             "Device Administrator Required",
             "This app needs device administrator permission to lock your device.",
@@ -146,8 +184,10 @@ function App() {
                 onPress: async () => {
                   try {
                     hasPromptedForAdmin.current = true;
+                    appendLog("User tapped Grant Permission");
                     await promptForAdmin();
                   } catch (e) {
+                    appendLog("Grant Permission flow failed");
                     Alert.alert(
                       "Error",
                       "Failed to open device admin settings."
@@ -158,6 +198,7 @@ function App() {
             ]
           );
         } else {
+          appendLog(`lockDevice error: ${error?.message ?? "unknown"}`);
           Alert.alert(
             "Unable to lock device",
             error?.message ?? "Failed to lock the device."
@@ -165,6 +206,7 @@ function App() {
         }
       }
     } else {
+      appendLog("lockDevice -> DeviceLock module missing");
       Alert.alert("Warning", "Device lock functionality is not available.");
     }
   };
@@ -211,6 +253,23 @@ function App() {
           </View>
         </View>
         <Button title="Lock Device" onPress={lockDevice} />
+        <View style={styles.logsContainer}>
+          <Text style={styles.logsTitle}>Debug Logs</Text>
+          <ScrollView
+            style={styles.logs}
+            contentContainerStyle={styles.logsContent}
+          >
+            {debugLogs.length === 0 ? (
+              <Text style={styles.logLine}>No logs yet</Text>
+            ) : (
+              debugLogs.map((log, index) => (
+                <Text key={index} style={styles.logLine}>
+                  {log}
+                </Text>
+              ))
+            )}
+          </ScrollView>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -281,6 +340,32 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 6,
     minWidth: 90,
+  },
+  logsContainer: {
+    width: "100%",
+    marginTop: 20,
+    maxHeight: 200,
+    borderRadius: 12,
+    backgroundColor: "#1C1C1E",
+    padding: 12,
+  },
+  logsTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    marginBottom: 8,
+  },
+  logs: {
+    width: "100%",
+  },
+  logsContent: {
+    paddingBottom: 4,
+  },
+  logLine: {
+    fontSize: 12,
+    color: "#D1D1D6",
+    marginBottom: 4,
+    fontFamily: "monospace",
   },
 });
 
