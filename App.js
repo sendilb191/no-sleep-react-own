@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   SafeAreaView,
   StyleSheet,
@@ -8,6 +8,7 @@ import {
   Button,
   NativeModules,
   Alert,
+  AppState,
 } from "react-native";
 
 const { DeviceLock } = NativeModules;
@@ -17,10 +18,66 @@ function App() {
   const [elapsedMs, setElapsedMs] = useState(0);
   const [isStopwatchRunning, setIsStopwatchRunning] = useState(false);
   const intervalRef = useRef(null);
+  const hasPromptedForAdmin = useRef(false);
+
+  const checkAdminStatus = useCallback(async () => {
+    if (DeviceLock && DeviceLock.isAdminActive) {
+      try {
+        const active = await DeviceLock.isAdminActive();
+        const enabled = Boolean(active);
+        setIsAdmin(enabled);
+        return enabled;
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+      }
+    }
+
+    setIsAdmin(false);
+    return false;
+  }, []);
+
+  const promptForAdmin = useCallback(async () => {
+    if (DeviceLock && DeviceLock.requestAdminPermission) {
+      try {
+        const granted = await DeviceLock.requestAdminPermission();
+        if (granted) {
+          setIsAdmin(true);
+        }
+        return granted;
+      } catch (error) {
+        console.error("Error requesting admin permission:", error);
+        throw error;
+      }
+    }
+
+    return false;
+  }, []);
 
   useEffect(() => {
-    checkAndRequestAdminPermission();
-  }, []);
+    (async () => {
+      const active = await checkAdminStatus();
+      if (!active && !hasPromptedForAdmin.current) {
+        hasPromptedForAdmin.current = true;
+        try {
+          await promptForAdmin();
+        } catch (error) {
+          Alert.alert("Error", "Failed to open device admin settings.");
+        }
+      }
+    })();
+  }, [checkAdminStatus, promptForAdmin]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        checkAdminStatus();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [checkAdminStatus]);
 
   useEffect(() => {
     if (!isStopwatchRunning) {
@@ -69,22 +126,6 @@ function App() {
     setElapsedMs(0);
   };
 
-  const checkAndRequestAdminPermission = async () => {
-    if (DeviceLock && DeviceLock.isAdminActive) {
-      try {
-        const active = await DeviceLock.isAdminActive();
-        setIsAdmin(active);
-
-        if (!active) {
-          // Request admin permission on first launch
-          await DeviceLock.requestAdminPermission();
-        }
-      } catch (error) {
-        console.error("Error checking admin status:", error);
-      }
-    }
-  };
-
   const lockDevice = async () => {
     if (DeviceLock && DeviceLock.lockNow) {
       try {
@@ -104,7 +145,8 @@ function App() {
                 text: "Grant Permission",
                 onPress: async () => {
                   try {
-                    await DeviceLock.requestAdminPermission();
+                    hasPromptedForAdmin.current = true;
+                    await promptForAdmin();
                   } catch (e) {
                     Alert.alert(
                       "Error",
