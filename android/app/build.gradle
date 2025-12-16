@@ -48,6 +48,7 @@ android {
     
     sourceSets {
         main {
+            java.srcDirs = ['src/main/java'] // Ensure Java source directory is included
             assets.srcDirs = ['src/main/assets']
         }
     }
