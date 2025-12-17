@@ -16,17 +16,17 @@ This guide explains how the native Android side of the project works so React de
 
 ## Key Native Files and Their Roles
 
-| File                                                                  | Purpose                                                                                                                         |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `android/app/src/main/AndroidManifest.xml`                            | Declares the application package, registers the device admin receiver, and requests required permissions.                       |
-| `android/app/src/main/java/com/nosleepapp/MyDeviceAdminReceiver.java` | Extends `DeviceAdminReceiver` so the OS can notify the app when admin rights are granted or revoked.                            |
-| `android/app/src/main/java/com/nosleepapp/DeviceLockModule.java`      | Implements the `DeviceLock` native module exposed to JavaScript. Provides `isAdminActive` and `lockNow`.                        |
-| `android/app/src/main/java/com/nosleepapp/DeviceLockPackage.java`     | Registers `DeviceLockModule` with React Native's package list.                                                                  |
-| `android/app/src/main/java/com/nosleepapp/MainApplication.java`       | Bootstraps the React Native host and manually registers `MainReactPackage`, `RNDateTimePickerPackage`, and `DeviceLockPackage`. |
-| `android/app/build.gradle`                                            | App-level Gradle configuration. Defines min/target SDK, build types, packaging rules, and native dependencies.                  |
-| `android/build.gradle`                                                | Top-level Gradle wrapper config shared across modules.                                                                          |
-| `android/gradle.properties`                                           | JVM and Gradle tuning, including enabling AndroidX and Kotlin.                                                                  |
-| `android/gradlew(.bat)`                                               | Wrapper scripts that download the exact Gradle version needed to build the project.                                             |
+| File                                                                  | Purpose                                                                                                        |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `android/app/src/main/AndroidManifest.xml`                            | Declares the application package, registers the device admin receiver, and requests required permissions.      |
+| `android/app/src/main/java/com/nosleepapp/MyDeviceAdminReceiver.java` | Extends `DeviceAdminReceiver` so the OS can notify the app when admin rights are granted or revoked.           |
+| `android/app/src/main/java/com/nosleepapp/DeviceLockModule.java`      | Implements the `DeviceLock` native module exposed to JavaScript. Provides `isAdminActive` and `lockNow`.       |
+| `android/app/src/main/java/com/nosleepapp/DeviceLockPackage.java`     | Registers `DeviceLockModule` with React Native's package list.                                                 |
+| `android/app/src/main/java/com/nosleepapp/MainApplication.java`       | Bootstraps the React Native host and manually registers `MainReactPackage` and `DeviceLockPackage`.            |
+| `android/app/build.gradle`                                            | App-level Gradle configuration. Defines min/target SDK, build types, packaging rules, and native dependencies. |
+| `android/build.gradle`                                                | Top-level Gradle wrapper config shared across modules.                                                         |
+| `android/gradle.properties`                                           | JVM and Gradle tuning, including enabling AndroidX and Kotlin.                                                 |
+| `android/gradlew(.bat)`                                               | Wrapper scripts that download the exact Gradle version needed to build the project.                            |
 
 ---
 
@@ -50,10 +50,6 @@ This guide explains how the native Android side of the project works so React de
 4. **Native logging**
 
    - `DeviceLockModule` emits events through `DeviceLockLog`. `useDeviceLock.js` subscribes using `NativeEventEmitter` and appends messages to the debug log UI.
-
-5. **Time picker integration**
-   - The project depends on `@react-native-community/datetimepicker`.
-   - `MainApplication.java` registers `RNDateTimePickerPackage`, enabling the inline Android time picker rendered inside `TimerSection.js`.
 
 ---
 
@@ -81,7 +77,6 @@ debug\app\build\outputs\apk\debug\app-debug.apk
 | Symptom                                             | Likely Cause                              | Suggested Fix                                                                                                           |
 | --------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `PackageList` cannot be resolved                    | Autolinking is disabled in this template  | Keep using manual registration in `MainApplication.java`.                                                               |
-| App crashes after tapping “Pick Delay”              | Time picker package not registered        | Ensure `RNDateTimePickerPackage` is imported and returned in `getPackages()`.                                           |
 | Build complains about missing device admin receiver | Manifest entry missing or renamed         | Verify `android:permission="android.permission.BIND_DEVICE_ADMIN"` and the `<receiver>` block in `AndroidManifest.xml`. |
 | `DEVICE_ADMIN_NOT_ACTIVE` while locking             | Permission not granted yet                | Prompt the user via `requestAdminPermission()` and verify status with `isAdminActive()`.                                |
 | Gradle SSL errors on Windows                        | Local JDK trust store missing Gradle cert | Install Gradle certificates or use JDK 17 with updated trust store.                                                     |
