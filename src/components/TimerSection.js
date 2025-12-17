@@ -1,6 +1,13 @@
-import React from "react";
-import { View, Text, Button, StyleSheet } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  Button,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+} from "react-native";
+import { TimePickerAndroid } from "react-native";
 
 const TimerSection = ({
   formatScheduledDuration,
@@ -14,6 +21,28 @@ const TimerSection = ({
   cancelScheduledLock,
   scheduleLock,
 }) => {
+  const [selectedTime, setSelectedTime] = useState(timePickerValue);
+  const [isPickerVisible, setPickerVisible] = useState(false);
+
+  const openTimePicker = async () => {
+    try {
+      const { action, hour, minute } = await TimePickerAndroid.open({
+        hour: selectedTime.getHours(),
+        minute: selectedTime.getMinutes(),
+        is24Hour: true,
+      });
+      if (action !== TimePickerAndroid.dismissedAction) {
+        const newTime = new Date();
+        newTime.setHours(hour);
+        newTime.setMinutes(minute);
+        setSelectedTime(newTime);
+        onTimePickerChange(null, newTime);
+      }
+    } catch (error) {
+      console.warn("Error opening time picker", error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Timed App Lock</Text>
@@ -26,17 +55,8 @@ const TimerSection = ({
         Selected duration: {formatScheduledDuration()}
       </Text>
       <View style={styles.timePickerWrapper}>
-        <Button title="Pick Delay" onPress={showTimePicker} />
+        <Button title="Pick Delay" onPress={openTimePicker} />
       </View>
-      {isTimePickerVisible && (
-        <DateTimePicker
-          mode="time"
-          display="default"
-          value={timePickerValue}
-          is24Hour
-          onChange={onTimePickerChange}
-        />
-      )}
       {isLockScheduled && (
         <Text style={styles.countdown}>
           Locking in {formatRemainingTime(scheduledRemainingMs)}
