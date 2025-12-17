@@ -1,0 +1,108 @@
+import React from "react";
+import {
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  Button,
+} from "react-native";
+import TimerSection from "../components/TimerSection";
+import DebugLogList from "../components/DebugLogList";
+import useDeviceLock from "../hooks/useDeviceLock";
+
+const MainScreen = () => {
+  const {
+    isAdmin,
+    debugLogs,
+    isLockScheduled,
+    scheduledRemainingMs,
+    formatScheduledDuration,
+    formatRemainingTime,
+    openTimePicker,
+    cancelScheduledLock,
+    scheduleLock,
+    lockDevice,
+  } = useDeviceLock();
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.content}>
+          <Text style={styles.title}>Hello! 👋</Text>
+          <Text style={styles.name}>Sendil Bala</Text>
+          <Text style={styles.subtitle}>Welcome to my React Native App</Text>
+          {!isAdmin && (
+            <Text style={styles.warning}>
+              ⚠️ Device admin permission required
+            </Text>
+          )}
+          <TimerSection
+            formatScheduledDuration={formatScheduledDuration}
+            isLockScheduled={isLockScheduled}
+            scheduledRemainingMs={scheduledRemainingMs}
+            formatRemainingTime={formatRemainingTime}
+            openTimePicker={openTimePicker}
+            cancelScheduledLock={cancelScheduledLock}
+            scheduleLock={scheduleLock}
+          />
+          <Button title="Lock Device" onPress={lockDevice} />
+          <DebugLogList logs={debugLogs} />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+  },
+  scrollContainer: {
+    flex: 1,
+    width: "100%",
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    alignItems: "center",
+  },
+  content: {
+    width: "100%",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
+  },
+  name: {
+    fontSize: 48,
+    fontWeight: "bold",
+    color: "#007AFF",
+    marginBottom: 20,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  warning: {
+    fontSize: 14,
+    color: "#FF3B30",
+    textAlign: "center",
+    marginBottom: 15,
+    paddingHorizontal: 20,
+  },
+});
+
+export default MainScreen;
