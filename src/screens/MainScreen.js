@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   SafeAreaView,
   StatusBar,
@@ -7,6 +7,7 @@ import {
   View,
   ScrollView,
   Button,
+  Switch,
 } from "react-native";
 import TimerSection from "../components/TimerSection";
 import DebugLogList from "../components/DebugLogList";
@@ -28,6 +29,8 @@ const MainScreen = () => {
     scheduleLock,
     lockDevice,
   } = useDeviceLock();
+
+  const [showDebugSection, setShowDebugSection] = useState(false);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -59,7 +62,14 @@ const MainScreen = () => {
             scheduleLock={scheduleLock}
           />
           <Button title="Lock Device" onPress={lockDevice} />
-          <DebugLogList logs={debugLogs} />
+          <View style={styles.debugToggleRow}>
+            <Text style={styles.debugToggleLabel}>Show Debug Logs</Text>
+            <Switch
+              value={showDebugSection}
+              onValueChange={setShowDebugSection}
+            />
+          </View>
+          {showDebugSection && <DebugLogList logs={debugLogs} />}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -108,6 +118,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 15,
     paddingHorizontal: 20,
+  },
+  debugToggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    marginTop: 20,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  debugToggleLabel: {
+    fontSize: 14,
+    color: "#0A1F44",
+    fontWeight: "500",
   },
 });
 
