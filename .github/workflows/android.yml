@@ -59,13 +59,24 @@ jobs:
       - name: Build Android APK
         run: |
           cd android
-          gradle assembleRelease --no-daemon
+          gradle assembleRelease --no-daemon --stacktrace --debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Upload Gradle Logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-logs
+          path: android/build/reports/**/*.log
+
+      - name: Print Dependency Tree
+        run: |
+          cd android
+          gradle dependencies
 
       - name: Create Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
