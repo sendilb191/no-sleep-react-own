@@ -5,7 +5,6 @@ import {
   NativeEventEmitter,
   NativeModules,
 } from "react-native";
-import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 
 const { DeviceLock } = NativeModules;
 
@@ -18,6 +17,7 @@ const useDeviceLock = () => {
   const [selectedMinutes, setSelectedMinutes] = useState(1);
   const [isLockScheduled, setIsLockScheduled] = useState(false);
   const [scheduledRemainingMs, setScheduledRemainingMs] = useState(0);
+  const [isTimePickerVisible, setTimePickerVisible] = useState(false);
 
   const appendLog = useCallback((message) => {
     const timestamp = new Date().toISOString();
@@ -84,37 +84,37 @@ const useDeviceLock = () => {
     return `${hoursText} ${minutesText}`;
   }, [selectedHours, selectedMinutes]);
 
-  const openTimePicker = useCallback(() => {
-    try {
-      const initial = new Date();
-      initial.setHours(selectedHours);
-      initial.setMinutes(selectedMinutes);
-      initial.setSeconds(0);
-      initial.setMilliseconds(0);
+  const timePickerValue = useMemo(() => {
+    const date = new Date();
+    date.setHours(selectedHours);
+    date.setMinutes(selectedMinutes);
+    date.setSeconds(0);
+    date.setMilliseconds(0);
+    return date;
+  }, [selectedHours, selectedMinutes]);
 
-      DateTimePickerAndroid.open({
-        mode: "time",
-        is24Hour: true,
-        value: initial,
-        onChange: (_, selectedDate) => {
-          if (!selectedDate) {
-            appendLog("Time picker dismissed without selection");
-            return;
-          }
+  const showTimePicker = useCallback(() => {
+    setTimePickerVisible(true);
+  }, []);
 
-          const hours = selectedDate.getHours();
-          const minutes = selectedDate.getMinutes();
-          setSelectedHours(hours);
-          setSelectedMinutes(minutes);
-          const minutesLabel = minutes.toString().padStart(2, "0");
-          appendLog(`Time picker -> selected ${hours}h ${minutesLabel}m`);
-        },
-      });
-    } catch (error) {
-      appendLog(`Error opening time picker: ${error.message}`);
-      Alert.alert("Error", "Failed to open time picker.");
-    }
-  }, [appendLog, selectedHours, selectedMinutes]);
+  const handleTimePickerChange = useCallback(
+    (event, selectedDate) => {
+      setTimePickerVisible(false);
+
+      if (!selectedDate || (event && event.type === "dismissed")) {
+        appendLog("Time picker dismissed without selection");
+        return;
+      }
+
+      const hours = selectedDate.getHours();
+      const minutes = selectedDate.getMinutes();
+      setSelectedHours(hours);
+      setSelectedMinutes(minutes);
+      const minutesLabel = minutes.toString().padStart(2, "0");
+      appendLog(`Time picker -> selected ${hours}h ${minutesLabel}m`);
+    },
+    [appendLog]
+  );
 
   const formatRemainingTime = useCallback((ms) => {
     const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -298,26 +298,37 @@ const useDeviceLock = () => {
       debugLogs,
       isLockScheduled,
       scheduledRemainingMs,
+      isTimePickerVisible,
+      timePickerValue,
     }),
-    [debugLogs, isAdmin, isLockScheduled, scheduledRemainingMs]
+    [
+      debugLogs,
+      isAdmin,
+      isLockScheduled,
+      isTimePickerVisible,
+      scheduledRemainingMs,
+      timePickerValue,
+    ]
   );
 
   const actions = useMemo(
     () => ({
       formatScheduledDuration,
       formatRemainingTime,
-      openTimePicker,
+      showTimePicker,
+      handleTimePickerChange,
       cancelScheduledLock,
       scheduleLock,
       lockDevice,
     }),
     [
       cancelScheduledLock,
-      formatRemainingTime,
       formatScheduledDuration,
+      formatRemainingTime,
       lockDevice,
-      openTimePicker,
       scheduleLock,
+      showTimePicker,
+      handleTimePickerChange,
     ]
   );
 

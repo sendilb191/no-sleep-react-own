@@ -1,12 +1,16 @@
 import React from "react";
 import { View, Text, Button, StyleSheet } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 const TimerSection = ({
   formatScheduledDuration,
   isLockScheduled,
   scheduledRemainingMs,
   formatRemainingTime,
-  openTimePicker,
+  showTimePicker,
+  isTimePickerVisible,
+  timePickerValue,
+  onTimePickerChange,
   cancelScheduledLock,
   scheduleLock,
 }) => {
@@ -22,8 +26,17 @@ const TimerSection = ({
         Selected duration: {formatScheduledDuration()}
       </Text>
       <View style={styles.timePickerWrapper}>
-        <Button title="Pick Delay" onPress={openTimePicker} />
+        <Button title="Pick Delay" onPress={showTimePicker} />
       </View>
+      {isTimePickerVisible && (
+        <DateTimePicker
+          mode="time"
+          display="default"
+          value={timePickerValue}
+          is24Hour
+          onChange={onTimePickerChange}
+        />
+      )}
       {isLockScheduled && (
         <Text style={styles.countdown}>
           Locking in {formatRemainingTime(scheduledRemainingMs)}

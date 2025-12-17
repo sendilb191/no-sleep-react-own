@@ -20,7 +20,10 @@ const MainScreen = () => {
     scheduledRemainingMs,
     formatScheduledDuration,
     formatRemainingTime,
-    openTimePicker,
+    showTimePicker,
+    isTimePickerVisible,
+    timePickerValue,
+    handleTimePickerChange,
     cancelScheduledLock,
     scheduleLock,
     lockDevice,
@@ -48,7 +51,10 @@ const MainScreen = () => {
             isLockScheduled={isLockScheduled}
             scheduledRemainingMs={scheduledRemainingMs}
             formatRemainingTime={formatRemainingTime}
-            openTimePicker={openTimePicker}
+            showTimePicker={showTimePicker}
+            isTimePickerVisible={isTimePickerVisible}
+            timePickerValue={timePickerValue}
+            onTimePickerChange={handleTimePickerChange}
             cancelScheduledLock={cancelScheduledLock}
             scheduleLock={scheduleLock}
           />
