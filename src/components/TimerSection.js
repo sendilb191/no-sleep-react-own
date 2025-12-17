@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  Button,
-  StyleSheet,
-  Modal,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, Button, StyleSheet, ScrollView } from "react-native";
 import { TimePickerAndroid } from "react-native";
 
 const TimerSection = ({
@@ -22,10 +15,15 @@ const TimerSection = ({
   scheduleLock,
 }) => {
   const [selectedTime, setSelectedTime] = useState(timePickerValue);
-  const [isPickerVisible, setPickerVisible] = useState(false);
+  const [debugLogs, setDebugLogs] = useState([]);
+
+  const logDebug = (message) => {
+    setDebugLogs((prevLogs) => [...prevLogs, message]);
+  };
 
   const openTimePicker = async () => {
     try {
+      logDebug("Opening time picker...");
       const { action, hour, minute } = await TimePickerAndroid.open({
         hour: selectedTime.getHours(),
         minute: selectedTime.getMinutes(),
@@ -37,9 +35,12 @@ const TimerSection = ({
         newTime.setMinutes(minute);
         setSelectedTime(newTime);
         onTimePickerChange(null, newTime);
+        logDebug(`Time selected: ${hour}:${minute}`);
+      } else {
+        logDebug("Time picker dismissed.");
       }
     } catch (error) {
-      console.warn("Error opening time picker", error);
+      logDebug(`Error opening time picker: ${error.message}`);
     }
   };
 
@@ -70,6 +71,14 @@ const TimerSection = ({
           onPress={isLockScheduled ? cancelScheduledLock : scheduleLock}
         />
       </View>
+      <ScrollView style={styles.debugView}>
+        <Text style={styles.debugTitle}>Debug Logs:</Text>
+        {debugLogs.map((log, index) => (
+          <Text key={index} style={styles.debugLog}>{`[${
+            index + 1
+          }] ${log}`}</Text>
+        ))}
+      </ScrollView>
     </View>
   );
 };
@@ -117,6 +126,24 @@ const styles = StyleSheet.create({
   actionWrapper: {
     marginTop: 4,
     marginBottom: 8,
+  },
+  debugView: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: "#E5E7EB",
+    borderRadius: 8,
+    maxHeight: 150,
+  },
+  debugTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  debugLog: {
+    fontSize: 14,
+    color: "#374151",
+    marginBottom: 4,
   },
 });
 
