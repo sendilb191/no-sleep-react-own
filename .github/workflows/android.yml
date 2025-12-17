@@ -59,7 +59,7 @@ jobs:
       - name: Build Android APK
         run: |
           cd android
-          gradle assembleRelease --no-daemon --stacktrace --debug
+          gradle assembleRelease --no-daemon --stacktrace --quiet
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
