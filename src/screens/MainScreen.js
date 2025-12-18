@@ -12,11 +12,11 @@ import {
 import TimerSection from "../components/TimerSection";
 import DebugLogList from "../components/DebugLogList";
 import useDeviceLock from "../hooks/useDeviceLock";
+import { useLog } from "../context/LogContext";
 
 const MainScreen = () => {
   const {
     isAdmin,
-    debugLogs,
     isLockScheduled,
     scheduledRemainingMs,
     formatScheduledDuration,
@@ -29,6 +29,8 @@ const MainScreen = () => {
     scheduleLock,
     lockDevice,
   } = useDeviceLock();
+
+  const { logs } = useLog();
 
   const [showDebugSection, setShowDebugSection] = useState(false);
 
@@ -69,7 +71,7 @@ const MainScreen = () => {
               onValueChange={setShowDebugSection}
             />
           </View>
-          {showDebugSection && <DebugLogList logs={debugLogs} />}
+          {showDebugSection && <DebugLogList logs={logs} />}
         </View>
       </ScrollView>
     </SafeAreaView>

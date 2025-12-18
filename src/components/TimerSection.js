@@ -1,29 +1,26 @@
 import React, { useState } from "react";
-import { View, Text, Button, StyleSheet, ScrollView } from "react-native";
-import { TimePickerAndroid } from "react-native";
+import { View, Text, Button, StyleSheet } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import DebugLogList from "../components/DebugLogList";
+import { useLog } from "../context/LogContext";
 
 const TimerSection = ({
   formatScheduledDuration,
   isLockScheduled,
   scheduledRemainingMs,
   formatRemainingTime,
-  showTimePicker,
-  isTimePickerVisible,
   timePickerValue,
   onTimePickerChange,
   cancelScheduledLock,
   scheduleLock,
 }) => {
   const [selectedTime, setSelectedTime] = useState(timePickerValue);
-  const [debugLogs, setDebugLogs] = useState([]);
-
-  const logDebug = (message) => {
-    setDebugLogs((prevLogs) => [...prevLogs, message]);
-  };
+  const [isPickerVisible, setPickerVisible] = useState(false);
+  const { addLog } = useLog();
 
   const openTimePicker = async () => {
     try {
-      logDebug("Opening time picker...");
+      addLog("Opening time picker...");
       const { action, hour, minute } = await TimePickerAndroid.open({
         hour: selectedTime.getHours(),
         minute: selectedTime.getMinutes(),
@@ -35,12 +32,31 @@ const TimerSection = ({
         newTime.setMinutes(minute);
         setSelectedTime(newTime);
         onTimePickerChange(null, newTime);
-        logDebug(`Time selected: ${hour}:${minute}`);
+        addLog(`Time selected: ${hour}:${minute}`);
       } else {
-        logDebug("Time picker dismissed.");
+        addLog("Time picker dismissed.");
       }
     } catch (error) {
-      logDebug(`Error opening time picker: ${error.message}`);
+      addLog(`Error opening time picker: ${error.message}`);
+      if (error.stack) {
+        addLog(`Stack trace: ${error.stack}`);
+      }
+      addLog(
+        "Ensure @react-native-community/datetimepicker is installed and linked correctly."
+      );
+    }
+  };
+
+  const onTimeChange = (event, selectedDate) => {
+    setPickerVisible(false);
+    if (event.type === "set" && selectedDate) {
+      setSelectedTime(selectedDate);
+      onTimePickerChange(null, selectedDate);
+      addLog(
+        `Time selected: ${selectedDate.getHours()}:${selectedDate.getMinutes()}`
+      );
+    } else {
+      addLog("Time picker dismissed.");
     }
   };
 
@@ -58,6 +74,15 @@ const TimerSection = ({
       <View style={styles.timePickerWrapper}>
         <Button title="Pick Delay" onPress={openTimePicker} />
       </View>
+      {isPickerVisible && (
+        <DateTimePicker
+          value={selectedTime || new Date()}
+          mode="time"
+          is24Hour={true}
+          display="default"
+          onChange={onTimeChange}
+        />
+      )}
       {isLockScheduled && (
         <Text style={styles.countdown}>
           Locking in {formatRemainingTime(scheduledRemainingMs)}
@@ -71,14 +96,7 @@ const TimerSection = ({
           onPress={isLockScheduled ? cancelScheduledLock : scheduleLock}
         />
       </View>
-      <ScrollView style={styles.debugView}>
-        <Text style={styles.debugTitle}>Debug Logs:</Text>
-        {debugLogs.map((log, index) => (
-          <Text key={index} style={styles.debugLog}>{`[${
-            index + 1
-          }] ${log}`}</Text>
-        ))}
-      </ScrollView>
+      <DebugLogList logs={logs} />
     </View>
   );
 };
@@ -126,24 +144,6 @@ const styles = StyleSheet.create({
   actionWrapper: {
     marginTop: 4,
     marginBottom: 8,
-  },
-  debugView: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 8,
-    maxHeight: 150,
-  },
-  debugTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111827",
-    marginBottom: 8,
-  },
-  debugLog: {
-    fontSize: 14,
-    color: "#374151",
-    marginBottom: 4,
   },
 });
 
