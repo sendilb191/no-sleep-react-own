@@ -89,3 +89,18 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Debug APK Build
+        run: |
+          cd android
+          echo "Listing APK files in release directory..."
+          ls -la app/build/outputs/apk/release
+
+          echo "Checking APK size..."
+          du -h app/build/outputs/apk/release/app-release.apk
+
+          echo "Verifying APK with aapt..."
+          build-tools/33.0.0/aapt dump badging app/build/outputs/apk/release/app-release.apk || echo "aapt verification failed"
+
+          echo "Checking for common issues in logs..."
+          grep -i "error" build/reports/**/*.log || echo "No errors found in Gradle logs"
