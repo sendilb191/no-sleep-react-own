@@ -129,54 +129,65 @@ const useDeviceLock = () => {
   }, []);
 
   const lockDevice = useCallback(async () => {
-    if (isLockScheduled) {
-      appendLog("lockDevice -> cancelling scheduled lock before execution");
-      resetScheduledLockState();
-    }
-
-    if (!DeviceLock || !DeviceLock.lockNow) {
-      appendLog("lockDevice -> DeviceLock module missing");
-      Alert.alert("Warning", "Device lock functionality is not available.");
-      return;
-    }
-
     try {
-      await DeviceLock.lockNow();
-      setIsAdmin(true);
-      appendLog("lockDevice -> success");
-    } catch (error) {
-      if (error?.code === "DEVICE_ADMIN_NOT_ACTIVE") {
-        appendLog("lockDevice -> admin not active, prompting");
-        Alert.alert(
-          "Device Administrator Required",
-          "This app needs device administrator permission to lock your device.",
-          [
-            {
-              text: "Cancel",
-              style: "cancel",
-            },
-            {
-              text: "Grant Permission",
-              onPress: async () => {
-                try {
-                  hasPromptedForAdmin.current = true;
-                  appendLog("User tapped Grant Permission");
-                  await promptForAdmin();
-                } catch (e) {
-                  appendLog("Grant Permission flow failed");
-                  Alert.alert("Error", "Failed to open device admin settings.");
-                }
-              },
-            },
-          ]
-        );
-      } else {
-        appendLog(`lockDevice error: ${error?.message ?? "unknown"}`);
-        Alert.alert(
-          "Unable to lock device",
-          error?.message ?? "Failed to lock the device."
-        );
+      if (isLockScheduled) {
+        appendLog("lockDevice -> cancelling scheduled lock before execution");
+        resetScheduledLockState();
       }
+
+      if (!DeviceLock || !DeviceLock.lockNow) {
+        appendLog("lockDevice -> DeviceLock module missing");
+        Alert.alert("Warning", "Device lock functionality is not available.");
+        return;
+      }
+
+      try {
+        await DeviceLock.lockNow();
+        setIsAdmin(true);
+        appendLog("lockDevice -> success");
+      } catch (error) {
+        if (error?.code === "DEVICE_ADMIN_NOT_ACTIVE") {
+          appendLog("lockDevice -> admin not active, prompting");
+          Alert.alert(
+            "Device Administrator Required",
+            "This app needs device administrator permission to lock your device.",
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+              },
+              {
+                text: "Grant Permission",
+                onPress: async () => {
+                  try {
+                    hasPromptedForAdmin.current = true;
+                    appendLog("User tapped Grant Permission");
+                    await promptForAdmin();
+                  } catch (e) {
+                    appendLog("Grant Permission flow failed");
+                    Alert.alert(
+                      "Error",
+                      "Failed to open device admin settings."
+                    );
+                  }
+                },
+              },
+            ]
+          );
+        } else {
+          appendLog(`lockDevice error: ${error?.message ?? "unknown"}`);
+          Alert.alert(
+            "Unable to lock device",
+            error?.message ?? "Failed to lock the device."
+          );
+        }
+      }
+    } catch (e) {
+      appendLog(`Unexpected error in lockDevice: ${e.message}`);
+      Alert.alert(
+        "Error",
+        "An unexpected error occurred while locking the device."
+      );
     }
   }, [appendLog, isLockScheduled, promptForAdmin, resetScheduledLockState]);
 

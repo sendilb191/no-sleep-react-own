@@ -100,7 +100,12 @@ jobs:
           du -h app/build/outputs/apk/release/app-release.apk
 
           echo "Verifying APK with aapt..."
-          build-tools/33.0.0/aapt dump badging app/build/outputs/apk/release/app-release.apk || echo "aapt verification failed"
+          AAPT_PATH=$(find $ANDROID_HOME/build-tools -name aapt | head -n 1)
+          if [ -z "$AAPT_PATH" ]; then
+            echo "aapt tool not found. Ensure Android Build Tools are installed."
+            exit 1
+          fi
+          $AAPT_PATH dump badging app/build/outputs/apk/release/app-release.apk || echo "aapt verification failed"
 
           echo "Checking for common issues in logs..."
           grep -i "error" build/reports/**/*.log || echo "No errors found in Gradle logs"
