@@ -44,27 +44,32 @@ public class DeviceLockModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void lockNow(Promise promise) {
-        DevicePolicyManager dpm = (DevicePolicyManager) reactContext.getSystemService(Context.DEVICE_POLICY_SERVICE);
-        if (dpm == null) {
-            emitLog("lockNow: DevicePolicyManager unavailable");
-            promise.reject("DEVICE_POLICY_MANAGER_UNAVAILABLE", "DevicePolicyManager service unavailable");
-            return;
-        }
-
-        ComponentName adminComponent = new ComponentName(reactContext, MyDeviceAdminReceiver.class);
-
-        if (dpm.isAdminActive(adminComponent)) {
-            try {
-                dpm.lockNow();
-                emitLog("lockNow: device locked successfully");
-                promise.resolve(null);
-            } catch (SecurityException exception) {
-                emitLog("lockNow: SecurityException - " + exception.getMessage());
-                promise.reject("LOCK_NOW_FAILED", "Device lock failed: " + exception.getMessage(), exception);
+        try {
+            DevicePolicyManager dpm = (DevicePolicyManager) reactContext.getSystemService(Context.DEVICE_POLICY_SERVICE);
+            if (dpm == null) {
+                emitLog("lockNow: DevicePolicyManager unavailable");
+                promise.reject("DEVICE_POLICY_MANAGER_UNAVAILABLE", "DevicePolicyManager service unavailable");
+                return;
             }
-        } else {
-            emitLog("lockNow: admin not active");
-            promise.reject("DEVICE_ADMIN_NOT_ACTIVE", "Device admin not active. Enable the app as a device administrator in system settings.");
+
+            ComponentName adminComponent = new ComponentName(reactContext, MyDeviceAdminReceiver.class);
+
+            if (dpm.isAdminActive(adminComponent)) {
+                try {
+                    dpm.lockNow();
+                    emitLog("lockNow: device locked successfully");
+                    promise.resolve(null);
+                } catch (SecurityException exception) {
+                    emitLog("lockNow: SecurityException - " + exception.getMessage());
+                    promise.reject("LOCK_NOW_FAILED", "Device lock failed: " + exception.getMessage(), exception);
+                }
+            } else {
+                emitLog("lockNow: admin not active");
+                promise.reject("DEVICE_ADMIN_NOT_ACTIVE", "Device admin not active. Enable the app as a device administrator in system settings.");
+            }
+        } catch (Exception e) {
+            emitLog("lockNow: unexpected error - " + e.getMessage());
+            promise.reject("UNEXPECTED_ERROR", "An unexpected error occurred: " + e.getMessage(), e);
         }
     }
 
