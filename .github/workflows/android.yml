@@ -62,9 +62,12 @@ jobs:
       - name: Clean and Build Android APKs
         run: |
           cd android
-          ./gradlew clean
+          # Ensure the wrapper file is executable (no-op on windows)
+          chmod +x ./gradlew || true
+          # Use sh to invoke the wrapper in case execute bit is not honored
+          sh ./gradlew clean
           # Build both debug and release variants so you can install debug APK on device for testing
-          ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace --quiet
+          sh ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace --quiet
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
