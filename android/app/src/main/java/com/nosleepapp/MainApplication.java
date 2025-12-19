@@ -9,6 +9,8 @@ import com.facebook.soloader.SoLoader;
 import java.util.Arrays;
 import java.util.List;
 import com.nosleepapp.DeviceLockPackage; // Import the DeviceLock package
+import com.reactcommunity.rndatetimepicker.RNDateTimePickerPackage; // Import DateTimePicker package
+import com.ocetnik.timer.BackgroundTimerPackage; // Import BackgroundTimer package
 
 public class MainApplication extends Application implements ReactApplication {
 
@@ -23,7 +25,10 @@ public class MainApplication extends Application implements ReactApplication {
         protected List<ReactPackage> getPackages() {
           return Arrays.<ReactPackage>asList(
               new MainReactPackage(),
-              new DeviceLockPackage());
+              new DeviceLockPackage(),
+              new RNDateTimePickerPackage(), // Add DateTimePicker package
+              new BackgroundTimerPackage() // Add BackgroundTimer package
+          );
         }
 
         @Override

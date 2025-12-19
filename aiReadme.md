@@ -5,3 +5,4 @@ Ai development guildlines
 - Builds are created using git hub actions and tested in andriod mobile after installation.
 - Do not use console logs since it wont be usefull.
 - Use DebugLogList to print any logs and errors.
+- if any library added in react native need to include in android\app\build.gradle this is build
