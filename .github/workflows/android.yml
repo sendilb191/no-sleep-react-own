@@ -56,17 +56,27 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Clean and Build Android APK
+      - name: Grant execute permissions to gradlew
+        run: chmod +x android/gradlew
+
+      - name: Clean and Build Android APKs
         run: |
           cd android
           ./gradlew clean
-          ./gradlew assembleRelease --no-daemon --stacktrace --quiet
+          # Build both debug and release variants so you can install debug APK on device for testing
+          ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace --quiet
 
-      - name: Upload APK
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload Gradle Logs
         uses: actions/upload-artifact@v4
