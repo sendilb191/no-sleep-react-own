@@ -59,18 +59,13 @@ jobs:
       - name: Grant execute permissions to gradlew
         run: chmod +x android/gradlew
 
-      - name: Clean and Build Android APKs
+      - name: Clean and Build Android APKs (use system Gradle)
         run: |
           set -o pipefail
           cd android
-          chmod +x ./gradlew || true
-          # Try wrapper first; if wrapper fails, fall back to using the Gradle installed by setup-gradle
-          if sh ./gradlew clean assembleDebug assembleRelease --no-daemon --stacktrace --quiet; then
-            echo "Built with gradlew wrapper"
-          else
-            echo "gradlew failed, falling back to gradle from PATH"
-            gradle clean assembleDebug assembleRelease --no-daemon --stacktrace --quiet
-          fi
+          # Use the Gradle installed by the setup-gradle action to avoid wrapper/classpath issues in CI
+          gradle --version
+          gradle clean assembleDebug assembleRelease --no-daemon --stacktrace --quiet
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
@@ -93,7 +88,7 @@ jobs:
       - name: Print Dependency Tree
         run: |
           cd android
-          ./gradlew dependencies
+          gradle dependencies
 
       - name: Create Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
