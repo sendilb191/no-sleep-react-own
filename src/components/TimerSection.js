@@ -133,7 +133,7 @@ const TimerSection = ({
           onPress={isLockScheduled ? cancelScheduledLock : scheduleLock}
         />
       </View>
-      <DebugLogList logs={logs} />
+      <DebugLogList />
     </View>
   );
 };
