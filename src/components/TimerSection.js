@@ -55,38 +55,13 @@ const TimerSection = ({
     }
   }, [isLockScheduled, scheduledRemainingMs]);
 
-  const openTimePicker = async () => {
-    try {
-      addLog("Opening time picker...");
-      const { action, hour, minute } = await TimePickerAndroid.open({
-        hour: selectedTime.getHours(),
-        minute: selectedTime.getMinutes(),
-        is24Hour: true,
-      });
-      if (action !== TimePickerAndroid.dismissedAction) {
-        const newTime = new Date();
-        newTime.setHours(hour);
-        newTime.setMinutes(minute);
-        setSelectedTime(newTime);
-        onTimePickerChange(null, newTime);
-        addLog(`Time selected: ${hour}:${minute}`);
-      } else {
-        addLog("Time picker dismissed.");
-      }
-    } catch (error) {
-      addLog(`Error opening time picker: ${error.message}`);
-      if (error.stack) {
-        addLog(`Stack trace: ${error.stack}`);
-      }
-      addLog(
-        "Ensure @react-native-community/datetimepicker is installed and linked correctly."
-      );
-    }
+  const openTimePicker = () => {
+    setPickerVisible(true);
   };
 
   const onTimeChange = (event, selectedDate) => {
     setPickerVisible(false);
-    if (event.type === "set" && selectedDate) {
+    if (selectedDate) {
       setSelectedTime(selectedDate);
       onTimePickerChange(null, selectedDate);
       addLog(
