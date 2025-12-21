@@ -34,6 +34,14 @@ const useDeviceLock = () => {
     }
   }, []);
 
+  const testToast = useCallback(() => {
+    if (DeviceLock && DeviceLock.showToast) {
+      DeviceLock.showToast("🔔 Toast notification is working!");
+    } else {
+      Alert.alert("Error", "Toast functionality not available");
+    }
+  }, []);
+
   const checkAdminStatus = useCallback(async () => {
     if (DeviceLock && DeviceLock.isAdminActive) {
       try {
@@ -219,6 +227,7 @@ const useDeviceLock = () => {
     cancelScheduledLock,
     scheduleLock,
     lockDevice,
+    testToast,
   };
 };
 

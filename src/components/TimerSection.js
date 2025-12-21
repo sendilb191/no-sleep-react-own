@@ -82,6 +82,7 @@ const TimerSection = ({
   cancelScheduledLock,
   scheduleLock,
   lockDevice,
+  testToast,
 }) => {
   const hasTimeSelected = selectedHours > 0 || selectedMinutes > 0;
 
@@ -152,6 +153,11 @@ const TimerSection = ({
       {/* Test Lock Button */}
       <TouchableOpacity style={styles.testButton} onPress={lockDevice}>
         <Text style={styles.testButtonText}>🔒 Test Lock (Lock Now)</Text>
+      </TouchableOpacity>
+
+      {/* Test Toast Button */}
+      <TouchableOpacity style={styles.testToastButton} onPress={testToast}>
+        <Text style={styles.testButtonText}>🔔 Test Toast Notification</Text>
       </TouchableOpacity>
     </View>
   );

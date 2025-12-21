@@ -17,6 +17,7 @@ const MainScreen = () => {
     cancelScheduledLock,
     scheduleLock,
     lockDevice,
+    testToast,
   } = useDeviceLock();
 
   return (
@@ -48,6 +49,7 @@ const MainScreen = () => {
             cancelScheduledLock={cancelScheduledLock}
             scheduleLock={scheduleLock}
             lockDevice={lockDevice}
+            testToast={testToast}
           />
         </View>
       </ScrollView>

@@ -153,4 +153,15 @@ public class DeviceLockModule extends ReactContextBaseJavaModule {
             }
         });
     }
+
+    // Required for NativeEventEmitter
+    @ReactMethod
+    public void addListener(String eventName) {
+        // Keep: Required for RN built-in Event Emitter
+    }
+
+    @ReactMethod
+    public void removeListeners(Integer count) {
+        // Keep: Required for RN built-in Event Emitter
+    }
 }

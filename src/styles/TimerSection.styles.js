@@ -149,6 +149,15 @@ export default StyleSheet.create({
     backgroundColor: "#F3F4F6",
     borderWidth: 1,
     borderColor: "#D1D5DB",
+    marginBottom: 10,
+  },
+  testToastButton: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    backgroundColor: "#FEF3C7",
+    borderWidth: 1,
+    borderColor: "#F59E0B",
   },
   testButtonText: {
     fontSize: 16,
