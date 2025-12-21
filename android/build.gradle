@@ -6,6 +6,7 @@ buildscript {
         targetSdkVersion = 34
         ndkVersion = "25.1.8937393"
         kotlinVersion = "2.0.21"
+        reactNativeVersion = "0.73.2"
     }
     repositories {
         google()
@@ -22,5 +23,30 @@ allprojects {
         google()
         mavenCentral()
         maven { url "https://www.jitpack.io" }
+        
+        // React Native maven repository (required for 0.71+)
+        maven {
+            url("$rootDir/../node_modules/react-native/android")
+        }
+        
+        exclusiveContent {
+            // React Native artifacts from npm
+            filter {
+                includeGroup "com.facebook.react"
+            }
+            forRepository {
+                maven {
+                    url("$rootDir/../node_modules/react-native/android")
+                }
+            }
+        }
+    }
+    
+    // Force all react-native dependencies to use our version
+    configurations.all {
+        resolutionStrategy {
+            force "com.facebook.react:react-android:${rootProject.ext.reactNativeVersion}"
+            force "com.facebook.react:hermes-android:${rootProject.ext.reactNativeVersion}"
+        }
     }
 }

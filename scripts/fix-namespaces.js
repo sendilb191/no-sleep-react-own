@@ -1,10 +1,13 @@
 /**
  * Post-install script to fix older React Native libraries
  * that don't have namespace defined (required by AGP 8+)
+ * and fix dynamic version dependencies
  */
 
 const fs = require("fs");
 const path = require("path");
+
+const REACT_NATIVE_VERSION = "0.73.2";
 
 const librariesToFix = [
   {
@@ -31,25 +34,74 @@ librariesToFix.forEach(({ name, namespace }) => {
   }
 
   let content = fs.readFileSync(buildGradlePath, "utf8");
+  let modified = false;
 
   // Check if namespace is already defined
-  if (content.includes("namespace")) {
+  if (!content.includes("namespace")) {
+    // Find the android { block and add namespace
+    const androidBlockRegex = /android\s*\{/;
+    if (androidBlockRegex.test(content)) {
+      content = content.replace(
+        androidBlockRegex,
+        `android {\n    namespace "${namespace}"`
+      );
+      modified = true;
+      console.log(`✅ ${name}: added namespace "${namespace}"`);
+    }
+  } else {
     console.log(`✅ ${name}: namespace already defined`);
-    return;
   }
 
-  // Find the android { block and add namespace
-  const androidBlockRegex = /android\s*\{/;
-  if (androidBlockRegex.test(content)) {
+  // Fix dynamic react-native version (+ or 0.71.0-rc.0) to use explicit version
+  if (
+    content.includes("com.facebook.react:react-native:+") ||
+    content.includes("com.facebook.react:react-native:0.71")
+  ) {
     content = content.replace(
-      androidBlockRegex,
-      `android {\n    namespace "${namespace}"`
+      /com\.facebook\.react:react-native:[^\s'"]+/g,
+      `com.facebook.react:react-android:${REACT_NATIVE_VERSION}`
     );
+    modified = true;
+    console.log(`✅ ${name}: fixed react-native dependency version`);
+  }
+
+  if (modified) {
     fs.writeFileSync(buildGradlePath, content);
-    console.log(`✅ ${name}: added namespace "${namespace}"`);
-  } else {
-    console.log(`⚠️  ${name}: couldn't find android block`);
   }
 });
+
+// Also fix @react-native-clipboard/clipboard if it has the same issue
+const clipboardPath = path.join(
+  __dirname,
+  "..",
+  "node_modules",
+  "@react-native-clipboard",
+  "clipboard",
+  "android",
+  "build.gradle"
+);
+
+if (fs.existsSync(clipboardPath)) {
+  let content = fs.readFileSync(clipboardPath, "utf8");
+  let modified = false;
+
+  if (
+    content.includes("com.facebook.react:react-native:+") ||
+    content.includes("com.facebook.react:react-native:0.71")
+  ) {
+    content = content.replace(
+      /com\.facebook\.react:react-native:[^\s'"]+/g,
+      `com.facebook.react:react-android:${REACT_NATIVE_VERSION}`
+    );
+    modified = true;
+    console.log(
+      `✅ @react-native-clipboard/clipboard: fixed react-native dependency version`
+    );
+  }
+
+  if (modified) {
+    fs.writeFileSync(clipboardPath, content);
+  }
+}
 
 console.log("✨ Namespace fix complete!");
