@@ -6,7 +6,9 @@ const { DeviceLock } = NativeModules;
 
 const useDeviceLock = () => {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [hasOverlayPermission, setHasOverlayPermission] = useState(false);
   const hasPromptedForAdmin = useRef(false);
+  const hasPromptedForOverlay = useRef(false);
   const hasShownOneMinuteWarning = useRef(false);
   const [selectedHours, setSelectedHours] = useState(0);
   const [selectedMinutes, setSelectedMinutes] = useState(0);
@@ -39,6 +41,40 @@ const useDeviceLock = () => {
       DeviceLock.showToast("🔔 Toast notification is working!");
     } else {
       Alert.alert("Error", "Toast functionality not available");
+    }
+  }, []);
+
+  const checkOverlayPermission = useCallback(async () => {
+    if (DeviceLock && DeviceLock.canDrawOverlays) {
+      try {
+        const canDraw = await DeviceLock.canDrawOverlays();
+        setHasOverlayPermission(Boolean(canDraw));
+        return Boolean(canDraw);
+      } catch {
+        setHasOverlayPermission(false);
+        return false;
+      }
+    }
+    setHasOverlayPermission(false);
+    return false;
+  }, []);
+
+  const requestOverlayPermission = useCallback(() => {
+    if (DeviceLock && DeviceLock.requestOverlayPermission) {
+      Alert.alert(
+        "Overlay Permission Required",
+        "To show the 1-minute warning on top of other apps, please enable 'Display over other apps' permission.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Open Settings",
+            onPress: () => {
+              hasPromptedForOverlay.current = true;
+              DeviceLock.requestOverlayPermission();
+            },
+          },
+        ]
+      );
     }
   }, []);
 
@@ -166,26 +202,40 @@ const useDeviceLock = () => {
     Alert.alert("Timer Cancelled", "The lock timer has been cancelled.");
   }, [isLockScheduled, resetScheduledLockState]);
 
-  // Check admin status on mount
+  // Request all permissions on mount
   useEffect(() => {
     (async () => {
-      const active = await checkAdminStatus();
-      if (!active && !hasPromptedForAdmin.current) {
+      // Check and request admin permission
+      const adminActive = await checkAdminStatus();
+      if (!adminActive && !hasPromptedForAdmin.current) {
         hasPromptedForAdmin.current = true;
         await promptForAdmin();
       }
-    })();
-  }, [checkAdminStatus, promptForAdmin]);
 
-  // Re-check admin when app becomes active
+      // Check and request overlay permission
+      const hasOverlay = await checkOverlayPermission();
+      if (!hasOverlay && !hasPromptedForOverlay.current) {
+        hasPromptedForOverlay.current = true;
+        requestOverlayPermission();
+      }
+    })();
+  }, [
+    checkAdminStatus,
+    promptForAdmin,
+    checkOverlayPermission,
+    requestOverlayPermission,
+  ]);
+
+  // Re-check permissions when app becomes active
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
         checkAdminStatus();
+        checkOverlayPermission();
       }
     });
     return () => subscription.remove();
-  }, [checkAdminStatus]);
+  }, [checkAdminStatus, checkOverlayPermission]);
 
   // Lock device when countdown reaches zero
   useEffect(() => {
@@ -217,6 +267,7 @@ const useDeviceLock = () => {
 
   return {
     isAdmin,
+    hasOverlayPermission,
     isLockScheduled,
     scheduledRemainingMs,
     selectedHours,
@@ -228,6 +279,7 @@ const useDeviceLock = () => {
     scheduleLock,
     lockDevice,
     testToast,
+    requestOverlayPermission,
   };
 };
 

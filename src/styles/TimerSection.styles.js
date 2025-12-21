@@ -158,10 +158,24 @@ export default StyleSheet.create({
     backgroundColor: "#FEF3C7",
     borderWidth: 1,
     borderColor: "#F59E0B",
+    marginBottom: 10,
   },
   testButtonText: {
     fontSize: 16,
     fontWeight: "500",
     color: "#374151",
+  },
+  permissionButton: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    backgroundColor: "#FEE2E2",
+    borderWidth: 1,
+    borderColor: "#EF4444",
+  },
+  permissionButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#DC2626",
   },
 });

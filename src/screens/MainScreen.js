@@ -7,6 +7,7 @@ import styles from "../styles/MainScreen.styles";
 const MainScreen = () => {
   const {
     isAdmin,
+    hasOverlayPermission,
     isLockScheduled,
     scheduledRemainingMs,
     formatRemainingTime,
@@ -18,6 +19,7 @@ const MainScreen = () => {
     scheduleLock,
     lockDevice,
     testToast,
+    requestOverlayPermission,
   } = useDeviceLock();
 
   return (
@@ -50,6 +52,8 @@ const MainScreen = () => {
             scheduleLock={scheduleLock}
             lockDevice={lockDevice}
             testToast={testToast}
+            hasOverlayPermission={hasOverlayPermission}
+            requestOverlayPermission={requestOverlayPermission}
           />
         </View>
       </ScrollView>

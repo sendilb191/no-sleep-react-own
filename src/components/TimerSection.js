@@ -83,6 +83,8 @@ const TimerSection = ({
   scheduleLock,
   lockDevice,
   testToast,
+  hasOverlayPermission,
+  requestOverlayPermission,
 }) => {
   const hasTimeSelected = selectedHours > 0 || selectedMinutes > 0;
 
@@ -159,6 +161,18 @@ const TimerSection = ({
       <TouchableOpacity style={styles.testToastButton} onPress={testToast}>
         <Text style={styles.testButtonText}>🔔 Test Toast Notification</Text>
       </TouchableOpacity>
+
+      {/* Overlay Permission Status */}
+      {!hasOverlayPermission && (
+        <TouchableOpacity
+          style={styles.permissionButton}
+          onPress={requestOverlayPermission}
+        >
+          <Text style={styles.permissionButtonText}>
+            ⚠️ Enable Overlay Permission
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
