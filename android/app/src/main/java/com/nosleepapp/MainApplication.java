@@ -8,6 +8,22 @@ import com.facebook.react.ReactPackage;
 import com.facebook.soloader.SoLoader;
 import java.util.List;
 
+/**
+ * Main Application class for the NoSleep React Native Application.
+ * 
+ * This class is responsible for:
+ * - Initializing the React Native runtime environment
+ * - Registering native modules and packages (including DeviceLockPackage)
+ * - Configuring React Native settings (debug mode, JS module name, etc.)
+ * - Loading the SoLoader for native libraries
+ * 
+ * Native Module Registration:
+ * - Auto-linked packages are loaded via PackageList
+ * - Custom DeviceLockPackage is manually added for device lock functionality
+ * 
+ * @see ReactApplication
+ * @see DeviceLockPackage
+ */
 public class MainApplication extends Application implements ReactApplication {
 
   private final ReactNativeHost mReactNativeHost =

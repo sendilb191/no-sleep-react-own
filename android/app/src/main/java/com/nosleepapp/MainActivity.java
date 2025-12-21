@@ -5,6 +5,21 @@ import com.facebook.react.ReactActivityDelegate;
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint;
 import com.facebook.react.defaults.DefaultReactActivityDelegate;
 
+/**
+ * Main Activity for the NoSleep React Native Application.
+ * 
+ * This is the entry point Activity that hosts the React Native application.
+ * It extends ReactActivity which handles:
+ * - Loading and displaying the React Native JavaScript bundle
+ * - Managing the React Native lifecycle
+ * - Bridging between Android and React Native
+ * 
+ * The main component name "NoSleepApp" must match the component registered
+ * in the JavaScript entry point (index.js or App.js).
+ * 
+ * @see ReactActivity
+ * @see MainApplication
+ */
 public class MainActivity extends ReactActivity {
 
   /**
