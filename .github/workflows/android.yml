@@ -2,9 +2,9 @@ name: Build Android APK
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, dev] # Added dev branch
   pull_request:
-    branches: [main, master]
+    branches: [main, master, dev] # Added dev branch
   workflow_dispatch:
 
 permissions:
@@ -41,8 +41,14 @@ jobs:
 
       - name: Verify React Native installation
         run: |
-          ls -la node_modules/@react-native/
-          test -f node_modules/@react-native/gradle-plugin/settings.gradle && echo "Gradle plugin found" || echo "Gradle plugin NOT found"
+          echo "=== React Native Android Maven Repository ==="
+          ls -la node_modules/react-native/android/ || echo "No android maven folder"
+          echo ""
+          echo "=== Checking for react-android artifacts ==="
+          find node_modules/react-native/android -name "*.pom" 2>/dev/null | head -10 || echo "No .pom files found"
+          echo ""
+          echo "=== @react-native packages ==="
+          ls -la node_modules/@react-native/ || echo "No @react-native packages"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -55,17 +61,46 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-disabled: true # Disable caching to avoid cache restore warnings
 
-      - name: Build Android APK
+      - name: Grant execute permissions to gradlew
+        run: chmod +x android/gradlew
+
+      - name: Clean and Build Android APKs (use system Gradle)
         run: |
+          set -o pipefail
           cd android
-          gradle assembleRelease --no-daemon
+          # Use the Gradle installed by the setup-gradle action to avoid wrapper/classpath issues in CI
+          gradle --version
+          gradle clean assembleDebug assembleRelease --no-daemon --stacktrace --quiet
 
-      - name: Upload APK
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload Gradle Logs (if exists)
+        uses: actions/upload-artifact@v4
+        if: always()
+        continue-on-error: true
+        with:
+          name: gradle-logs
+          path: android/build/reports/
+          if-no-files-found: ignore
+
+      - name: Print Dependency Tree
+        continue-on-error: true
+        run: |
+          cd android
+          gradle dependencies
 
       - name: Create Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -78,3 +113,28 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Debug APK Build
+        continue-on-error: true
+        run: |
+          cd android
+          echo "Listing APK files in release directory..."
+          ls -la app/build/outputs/apk/release
+
+          echo "Checking APK size..."
+          du -h app/build/outputs/apk/release/app-release.apk
+
+          echo "Verifying APK with aapt..."
+          AAPT_PATH=$(find $ANDROID_HOME/build-tools -name aapt | head -n 1)
+          if [ -z "$AAPT_PATH" ]; then
+            echo "aapt tool not found. Ensure Android Build Tools are installed."
+            exit 1
+          fi
+          $AAPT_PATH dump badging app/build/outputs/apk/release/app-release.apk || echo "aapt verification failed"
+
+          echo "Checking for common issues in logs..."
+          if [ -d "build/reports" ]; then
+            grep -ri "error" build/reports/ || echo "No errors found in Gradle logs"
+          else
+            echo "No Gradle reports directory found (this is normal for clean builds)"
+          fi

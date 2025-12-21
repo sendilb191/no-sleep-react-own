@@ -6,6 +6,7 @@ buildscript {
         targetSdkVersion = 34
         ndkVersion = "25.1.8937393"
         kotlinVersion = "2.0.21"
+        reactNativeVersion = "0.73.2"
     }
     repositories {
         google()
@@ -22,5 +23,35 @@ allprojects {
         google()
         mavenCentral()
         maven { url "https://www.jitpack.io" }
+    }
+    
+    // Handle dependencies from older libraries
+    configurations.all {
+        resolutionStrategy {
+            // Force our react-native version
+            force "com.facebook.react:react-android:${rootProject.ext.reactNativeVersion}"
+            force "com.facebook.react:hermes-android:${rootProject.ext.reactNativeVersion}"
+            
+            // Redirect old react-native artifact name to new react-android
+            eachDependency { details ->
+                if (details.requested.group == 'com.facebook.react' && details.requested.name == 'react-native') {
+                    details.useTarget("com.facebook.react:react-android:${rootProject.ext.reactNativeVersion}")
+                    details.because("react-native renamed to react-android in 0.71+")
+                }
+            }
+        }
+    }
+}
+
+// Enable buildConfig for all subprojects (required for Gradle 9+)
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                buildFeatures {
+                    buildConfig = true
+                }
+            }
+        }
     }
 }

@@ -3,21 +3,51 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "postinstall": "node scripts/fix-namespaces.js",
     "android": "react-native run-android",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint . --ext .js,.jsx",
+    "lint:fix": "eslint . --ext .js,.jsx --fix",
+    "format": "prettier --write \"src/**/*.js\" \"*.js\"",
+    "format:check": "prettier --check \"src/**/*.js\" \"*.js\"",
+    "bundle:check": "react-native bundle --platform android --dev false --entry-file index.js --bundle-output .bundle-check.js && node -e \"console.log('✓ Bundle check passed!')\" && node -e \"require('fs').unlinkSync('.bundle-check.js')\"",
+    "validate": "npm run lint && npm run bundle:check",
+    "precommit": "npm run lint && npm run format:check && npm run bundle:check"
   },
   "dependencies": {
+    "@react-native-clipboard/clipboard": "^1.16.3",
     "react": "18.2.0",
-    "react-native": "0.73.2"
+    "react-native": "0.73.2",
+    "react-native-background-timer": "^2.4.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@babel/preset-env": "^7.20.0",
     "@babel/runtime": "^7.20.0",
+    "@react-native-community/eslint-config": "^3.2.0",
     "@react-native/babel-preset": "0.73.18",
     "@react-native/metro-config": "0.73.2",
-    "metro-react-native-babel-preset": "0.77.0"
+    "eslint": "^8.57.1",
+    "metro-react-native-babel-preset": "0.77.0",
+    "prettier": "^2.8.8"
+  },
+  "overrides": {
+    "ip": "2.0.1",
+    "react-native": {
+      "@react-native-community/cli": "12.3.7",
+      "@react-native-community/cli-clean": "12.3.7",
+      "@react-native-community/cli-config": "12.3.7",
+      "@react-native-community/cli-debugger-ui": "12.3.7",
+      "@react-native-community/cli-doctor": "12.3.7",
+      "@react-native-community/cli-hermes": "12.3.7",
+      "@react-native-community/cli-platform-android": "12.3.7",
+      "@react-native-community/cli-platform-ios": "12.3.7",
+      "@react-native-community/cli-plugin-metro": "12.3.7",
+      "@react-native-community/cli-server-api": "12.3.7",
+      "@react-native-community/cli-tools": "12.3.7",
+      "@react-native-community/cli-types": "12.3.7"
+    }
   },
   "engines": {
     "node": ">=18"
