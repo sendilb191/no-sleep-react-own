@@ -60,3 +60,5 @@ dependencies {
     implementation("com.facebook.soloader:soloader:0.10.5")
     implementation("androidx.appcompat:appcompat:1.6.1")
 }
+
+apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
