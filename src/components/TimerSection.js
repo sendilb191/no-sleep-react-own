@@ -1,85 +1,158 @@
-import React, { useState, useCallback } from "react";
-import { View, Text, Button } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { useLog } from "../context/LogContext";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Modal,
+  FlatList,
+  Pressable,
+} from "react-native";
 import styles from "../styles/TimerSection.styles";
 
+const DropdownSelect = ({ label, value, options, onSelect, disabled }) => {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <View style={styles.pickerContainer}>
+      <Text style={styles.pickerLabel}>{label}</Text>
+      <TouchableOpacity
+        style={[styles.dropdownButton, disabled && styles.dropdownDisabled]}
+        onPress={() => !disabled && setVisible(true)}
+        disabled={disabled}
+      >
+        <Text style={styles.dropdownButtonText}>
+          {value.toString().padStart(2, "0")}
+        </Text>
+        <Text style={styles.dropdownArrow}>▼</Text>
+      </TouchableOpacity>
+
+      <Modal
+        visible={visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select {label}</Text>
+            <FlatList
+              data={options}
+              keyExtractor={(item) => item.toString()}
+              style={styles.optionsList}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.optionItem,
+                    value === item && styles.optionItemSelected,
+                  ]}
+                  onPress={() => {
+                    onSelect(item);
+                    setVisible(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.optionText,
+                      value === item && styles.optionTextSelected,
+                    ]}
+                  >
+                    {item.toString().padStart(2, "0")}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+};
+
 const TimerSection = ({
-  formatScheduledDuration,
+  selectedHours,
+  selectedMinutes,
+  onHoursChange,
+  onMinutesChange,
   isLockScheduled,
   scheduledRemainingMs,
   formatRemainingTime,
-  timePickerValue,
-  onTimePickerChange,
   cancelScheduledLock,
   scheduleLock,
+  lockDevice,
 }) => {
-  const [selectedTime, setSelectedTime] = useState(timePickerValue);
-  const [isPickerVisible, setPickerVisible] = useState(false);
-  const { addLog } = useLog();
+  const hasTimeSelected = selectedHours > 0 || selectedMinutes > 0;
 
-  // Note: The countdown timer logic is handled in useDeviceLock hook.
-  // This component only handles the UI for time selection and display.
+  // Generate hours options (0-23)
+  const hoursOptions = Array.from({ length: 24 }, (_, i) => i);
 
-  const openTimePicker = useCallback(() => {
-    setPickerVisible(true);
-    addLog("Opening time picker");
-  }, [addLog]);
-
-  const onTimeChange = useCallback(
-    (event, selectedDate) => {
-      setPickerVisible(false);
-      if (event?.type === "dismissed") {
-        addLog("Time picker dismissed.");
-        return;
-      }
-      if (selectedDate) {
-        setSelectedTime(selectedDate);
-        onTimePickerChange(event, selectedDate);
-        const hours = selectedDate.getHours();
-        const minutes = selectedDate.getMinutes().toString().padStart(2, "0");
-        addLog(`Time selected: ${hours}:${minutes}`);
-      }
-    },
-    [onTimePickerChange, addLog]
-  );
+  // Generate minutes options (0-59)
+  const minutesOptions = Array.from({ length: 60 }, (_, i) => i);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Timed App Lock</Text>
+      <Text style={styles.title}>Set Lock Timer</Text>
       <Text style={styles.description}>
-        Choose a delay (up to 24 hours with 1-minute precision) before the app
-        locks the device automatically.
+        Select how long before your device automatically locks
       </Text>
-      <Text style={styles.label}>Delay</Text>
-      <Text style={styles.summary}>
-        Selected duration: {formatScheduledDuration()}
-      </Text>
-      <View style={styles.timePickerWrapper}>
-        <Button title="Pick Delay" onPress={openTimePicker} />
-      </View>
-      {isPickerVisible && (
-        <DateTimePicker
-          value={selectedTime || new Date()}
-          mode="time"
-          is24Hour={true}
-          display="default"
-          onChange={onTimeChange}
+
+      {/* Dropdowns Row */}
+      <View style={styles.pickersRow}>
+        <DropdownSelect
+          label="Hours"
+          value={selectedHours}
+          options={hoursOptions}
+          onSelect={onHoursChange}
+          disabled={isLockScheduled}
         />
-      )}
+        <DropdownSelect
+          label="Minutes"
+          value={selectedMinutes}
+          options={minutesOptions}
+          onSelect={onMinutesChange}
+          disabled={isLockScheduled}
+        />
+      </View>
+
+      {/* Countdown Display */}
       {isLockScheduled && (
-        <Text style={styles.countdown}>
-          Locking in {formatRemainingTime(scheduledRemainingMs)}
-        </Text>
+        <View style={styles.countdownContainer}>
+          <Text style={styles.countdownLabel}>Locking in</Text>
+          <Text style={styles.countdown}>
+            {formatRemainingTime(scheduledRemainingMs)}
+          </Text>
+        </View>
       )}
-      <View style={styles.actionWrapper}>
-        <Button
-          title={
-            isLockScheduled ? "Cancel Scheduled Lock" : "Activate App Lock"
-          }
-          onPress={isLockScheduled ? cancelScheduledLock : scheduleLock}
-        />
-      </View>
+
+      {/* Action Button */}
+      <TouchableOpacity
+        style={[
+          styles.actionButton,
+          isLockScheduled
+            ? styles.cancelButton
+            : hasTimeSelected
+            ? styles.activeButton
+            : styles.disabledButton,
+        ]}
+        onPress={isLockScheduled ? cancelScheduledLock : scheduleLock}
+        disabled={!isLockScheduled && !hasTimeSelected}
+      >
+        <Text
+          style={[
+            styles.actionButtonText,
+            !isLockScheduled && !hasTimeSelected && styles.disabledButtonText,
+          ]}
+        >
+          {isLockScheduled ? "Cancel Timer" : "Start Timer"}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Test Lock Button */}
+      <TouchableOpacity style={styles.testButton} onPress={lockDevice}>
+        <Text style={styles.testButtonText}>🔒 Test Lock (Lock Now)</Text>
+      </TouchableOpacity>
     </View>
   );
 };

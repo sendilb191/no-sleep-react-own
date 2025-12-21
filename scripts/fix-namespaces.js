@@ -14,11 +14,6 @@ const librariesToFix = [
     name: "react-native-background-timer",
     namespace: "com.ocetnik.timer",
   },
-  {
-    name: "@react-native-community/datetimepicker",
-    path: "@react-native-community/datetimepicker",
-    namespace: "com.reactcommunity.rndatetimepicker",
-  },
 ];
 
 console.log("🔧 Fixing namespace for older libraries...");

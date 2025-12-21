@@ -1,59 +1,45 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Alert,
-  AppState,
-  NativeEventEmitter,
-  NativeModules,
-} from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, AppState, NativeModules } from "react-native";
+import BackgroundTimer from "react-native-background-timer";
 
 const { DeviceLock } = NativeModules;
 
 const useDeviceLock = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const hasPromptedForAdmin = useRef(false);
-  const [debugLogs, setDebugLogs] = useState([]);
-  const countdownIntervalRef = useRef(null);
   const [selectedHours, setSelectedHours] = useState(0);
-  const [selectedMinutes, setSelectedMinutes] = useState(1);
+  const [selectedMinutes, setSelectedMinutes] = useState(0);
   const [isLockScheduled, setIsLockScheduled] = useState(false);
   const [scheduledRemainingMs, setScheduledRemainingMs] = useState(0);
-  const [isTimePickerVisible, setTimePickerVisible] = useState(false);
+  const backgroundTimerRef = useRef(null);
 
-  const appendLog = useCallback((message) => {
-    const timestamp = new Date().toISOString();
-    setDebugLogs((prev) => [`${timestamp} - ${message}`, ...prev].slice(0, 50));
-  }, []);
-
-  const stopCountdown = useCallback(() => {
-    if (countdownIntervalRef.current) {
-      clearInterval(countdownIntervalRef.current);
-      countdownIntervalRef.current = null;
+  const stopBackgroundTimer = useCallback(() => {
+    if (backgroundTimerRef.current) {
+      BackgroundTimer.clearInterval(backgroundTimerRef.current);
+      backgroundTimerRef.current = null;
     }
   }, []);
 
   const resetScheduledLockState = useCallback(() => {
-    stopCountdown();
+    stopBackgroundTimer();
     setIsLockScheduled(false);
     setScheduledRemainingMs(0);
-  }, [stopCountdown]);
+  }, [stopBackgroundTimer]);
 
   const checkAdminStatus = useCallback(async () => {
     if (DeviceLock && DeviceLock.isAdminActive) {
       try {
         const active = await DeviceLock.isAdminActive();
-        const enabled = Boolean(active);
-        setIsAdmin(enabled);
-        appendLog(`checkAdminStatus -> ${enabled ? "ACTIVE" : "INACTIVE"}`);
-        return enabled;
-      } catch (error) {
-        appendLog(`checkAdminStatus error: ${error?.message ?? "unknown"}`);
+        setIsAdmin(Boolean(active));
+        return Boolean(active);
+      } catch {
+        setIsAdmin(false);
+        return false;
       }
     }
-
     setIsAdmin(false);
-    appendLog("checkAdminStatus -> fallback INACTIVE");
     return false;
-  }, [appendLog]);
+  }, []);
 
   const promptForAdmin = useCallback(async () => {
     if (DeviceLock && DeviceLock.requestAdminPermission) {
@@ -61,60 +47,16 @@ const useDeviceLock = () => {
         const granted = await DeviceLock.requestAdminPermission();
         if (granted) {
           setIsAdmin(true);
-          appendLog("promptForAdmin -> granted");
         } else {
-          appendLog("promptForAdmin -> launched settings (waiting for result)");
-          setTimeout(() => {
-            checkAdminStatus();
-          }, 500);
+          setTimeout(() => checkAdminStatus(), 500);
         }
         return granted;
-      } catch (error) {
-        appendLog(`promptForAdmin error: ${error?.message ?? "unknown"}`);
-        throw error;
+      } catch {
+        return false;
       }
     }
-
     return false;
-  }, [appendLog, checkAdminStatus]);
-
-  const formatScheduledDuration = useCallback(() => {
-    const hoursText = `${selectedHours}h`;
-    const minutesText = `${selectedMinutes.toString().padStart(2, "0")}m`;
-    return `${hoursText} ${minutesText}`;
-  }, [selectedHours, selectedMinutes]);
-
-  const timePickerValue = useMemo(() => {
-    const date = new Date();
-    date.setHours(selectedHours);
-    date.setMinutes(selectedMinutes);
-    date.setSeconds(0);
-    date.setMilliseconds(0);
-    return date;
-  }, [selectedHours, selectedMinutes]);
-
-  const showTimePicker = useCallback(() => {
-    setTimePickerVisible(true);
-  }, []);
-
-  const handleTimePickerChange = useCallback(
-    (event, selectedDate) => {
-      setTimePickerVisible(false);
-
-      if (!selectedDate || (event && event.type === "dismissed")) {
-        appendLog("Time picker dismissed without selection");
-        return;
-      }
-
-      const hours = selectedDate.getHours();
-      const minutes = selectedDate.getMinutes();
-      setSelectedHours(hours);
-      setSelectedMinutes(minutes);
-      const minutesLabel = minutes.toString().padStart(2, "0");
-      appendLog(`Time picker -> selected ${hours}h ${minutesLabel}m`);
-    },
-    [appendLog]
-  );
+  }, [checkAdminStatus]);
 
   const formatRemainingTime = useCallback((ms) => {
     const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -129,71 +71,45 @@ const useDeviceLock = () => {
   }, []);
 
   const lockDevice = useCallback(async () => {
-    try {
-      if (isLockScheduled) {
-        appendLog("lockDevice -> cancelling scheduled lock before execution");
-        resetScheduledLockState();
-      }
-
-      if (!DeviceLock || !DeviceLock.lockNow) {
-        appendLog("lockDevice -> DeviceLock module missing");
-        Alert.alert("Warning", "Device lock functionality is not available.");
-        return;
-      }
-
-      try {
-        await DeviceLock.lockNow();
-        setIsAdmin(true);
-        appendLog("lockDevice -> success");
-      } catch (error) {
-        if (error?.code === "DEVICE_ADMIN_NOT_ACTIVE") {
-          appendLog("lockDevice -> admin not active, prompting");
-          Alert.alert(
-            "Device Administrator Required",
-            "This app needs device administrator permission to lock your device.",
-            [
-              {
-                text: "Cancel",
-                style: "cancel",
-              },
-              {
-                text: "Grant Permission",
-                onPress: async () => {
-                  try {
-                    hasPromptedForAdmin.current = true;
-                    appendLog("User tapped Grant Permission");
-                    await promptForAdmin();
-                  } catch (e) {
-                    appendLog("Grant Permission flow failed");
-                    Alert.alert(
-                      "Error",
-                      "Failed to open device admin settings."
-                    );
-                  }
-                },
-              },
-            ]
-          );
-        } else {
-          appendLog(`lockDevice error: ${error?.message ?? "unknown"}`);
-          Alert.alert(
-            "Unable to lock device",
-            error?.message ?? "Failed to lock the device."
-          );
-        }
-      }
-    } catch (e) {
-      appendLog(`Unexpected error in lockDevice: ${e.message}`);
-      Alert.alert(
-        "Error",
-        "An unexpected error occurred while locking the device."
-      );
+    if (isLockScheduled) {
+      resetScheduledLockState();
     }
-  }, [appendLog, isLockScheduled, promptForAdmin, resetScheduledLockState]);
+
+    if (!DeviceLock || !DeviceLock.lockNow) {
+      Alert.alert("Warning", "Device lock functionality is not available.");
+      return;
+    }
+
+    try {
+      await DeviceLock.lockNow();
+      setIsAdmin(true);
+    } catch (error) {
+      if (error?.code === "DEVICE_ADMIN_NOT_ACTIVE") {
+        Alert.alert(
+          "Device Administrator Required",
+          "This app needs device administrator permission to lock your device.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Grant Permission",
+              onPress: async () => {
+                hasPromptedForAdmin.current = true;
+                await promptForAdmin();
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          "Unable to lock device",
+          error?.message ?? "Failed to lock the device."
+        );
+      }
+    }
+  }, [isLockScheduled, promptForAdmin, resetScheduledLockState]);
 
   const scheduleLock = useCallback(() => {
     if (!DeviceLock || !DeviceLock.lockNow) {
-      appendLog("scheduleLock -> DeviceLock module missing");
       Alert.alert(
         "Warning",
         "Device lock functionality is not available on this device."
@@ -203,149 +119,83 @@ const useDeviceLock = () => {
 
     const totalMinutes = selectedHours * 60 + selectedMinutes;
     if (totalMinutes <= 0) {
-      appendLog("scheduleLock -> invalid duration");
       Alert.alert(
         "Invalid duration",
-        "Select at least one minute before activating the app lock."
+        "Please select at least 1 minute before starting the timer."
       );
       return;
     }
 
-    stopCountdown();
+    stopBackgroundTimer();
 
     const totalMs = totalMinutes * 60 * 1000;
     setScheduledRemainingMs(totalMs);
     setIsLockScheduled(true);
-    appendLog(`Scheduled lock in ${formatScheduledDuration()}`);
 
-    countdownIntervalRef.current = setInterval(() => {
-      setScheduledRemainingMs((prev) => Math.max(prev - 1000, 0));
+    // Use BackgroundTimer for background execution
+    backgroundTimerRef.current = BackgroundTimer.setInterval(() => {
+      setScheduledRemainingMs((prev) => {
+        const next = Math.max(prev - 1000, 0);
+        return next;
+      });
     }, 1000);
-  }, [
-    appendLog,
-    formatScheduledDuration,
-    selectedHours,
-    selectedMinutes,
-    stopCountdown,
-  ]);
+  }, [selectedHours, selectedMinutes, stopBackgroundTimer]);
 
   const cancelScheduledLock = useCallback(() => {
     if (!isLockScheduled) {
       return;
     }
-
     resetScheduledLockState();
-    appendLog("Scheduled lock cancelled");
-  }, [appendLog, isLockScheduled, resetScheduledLockState]);
+    Alert.alert("Timer Cancelled", "The lock timer has been cancelled.");
+  }, [isLockScheduled, resetScheduledLockState]);
 
-  useEffect(() => {
-    if (!DeviceLock) {
-      return undefined;
-    }
-
-    const emitter = new NativeEventEmitter(DeviceLock);
-    const subscription = emitter.addListener("DeviceLockLog", (message) => {
-      appendLog(`[native] ${message}`);
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [appendLog]);
-
+  // Check admin status on mount
   useEffect(() => {
     (async () => {
       const active = await checkAdminStatus();
       if (!active && !hasPromptedForAdmin.current) {
         hasPromptedForAdmin.current = true;
-        appendLog("Initial admin check inactive -> prompting user");
-        try {
-          await promptForAdmin();
-        } catch (error) {
-          Alert.alert("Error", "Failed to open device admin settings.");
-          appendLog("Initial prompt failed to launch settings");
-        }
+        await promptForAdmin();
       }
     })();
-  }, [appendLog, checkAdminStatus, promptForAdmin]);
+  }, [checkAdminStatus, promptForAdmin]);
 
+  // Re-check admin when app becomes active
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
-        appendLog("AppState change -> active, refreshing admin state");
         checkAdminStatus();
       }
     });
+    return () => subscription.remove();
+  }, [checkAdminStatus]);
 
-    return () => {
-      subscription.remove();
-    };
-  }, [appendLog, checkAdminStatus]);
-
+  // Lock device when countdown reaches zero
   useEffect(() => {
     if (isLockScheduled && scheduledRemainingMs === 0) {
-      stopCountdown();
+      stopBackgroundTimer();
       setIsLockScheduled(false);
-      appendLog("Scheduled lock countdown reached zero");
       lockDevice();
     }
-  }, [
-    appendLog,
-    isLockScheduled,
-    lockDevice,
-    scheduledRemainingMs,
-    stopCountdown,
-  ]);
+  }, [isLockScheduled, lockDevice, scheduledRemainingMs, stopBackgroundTimer]);
 
+  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      stopCountdown();
-    };
-  }, [stopCountdown]);
-
-  const state = useMemo(
-    () => ({
-      isAdmin,
-      debugLogs,
-      isLockScheduled,
-      scheduledRemainingMs,
-      isTimePickerVisible,
-      timePickerValue,
-    }),
-    [
-      debugLogs,
-      isAdmin,
-      isLockScheduled,
-      isTimePickerVisible,
-      scheduledRemainingMs,
-      timePickerValue,
-    ]
-  );
-
-  const actions = useMemo(
-    () => ({
-      formatScheduledDuration,
-      formatRemainingTime,
-      showTimePicker,
-      handleTimePickerChange,
-      cancelScheduledLock,
-      scheduleLock,
-      lockDevice,
-    }),
-    [
-      cancelScheduledLock,
-      formatScheduledDuration,
-      formatRemainingTime,
-      lockDevice,
-      scheduleLock,
-      showTimePicker,
-      handleTimePickerChange,
-    ]
-  );
+    return () => stopBackgroundTimer();
+  }, [stopBackgroundTimer]);
 
   return {
-    ...state,
-    ...actions,
+    isAdmin,
+    isLockScheduled,
+    scheduledRemainingMs,
+    selectedHours,
+    selectedMinutes,
+    setSelectedHours,
+    setSelectedMinutes,
+    formatRemainingTime,
+    cancelScheduledLock,
+    scheduleLock,
+    lockDevice,
   };
 };
 

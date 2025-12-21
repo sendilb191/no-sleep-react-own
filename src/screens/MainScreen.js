@@ -1,17 +1,7 @@
-import React, { useState } from "react";
-import {
-  SafeAreaView,
-  StatusBar,
-  Text,
-  View,
-  ScrollView,
-  Button,
-  Switch,
-} from "react-native";
+import React from "react";
+import { SafeAreaView, StatusBar, Text, View, ScrollView } from "react-native";
 import TimerSection from "../components/TimerSection";
-import DebugLogList from "../components/DebugLogList";
 import useDeviceLock from "../hooks/useDeviceLock";
-import { useLog } from "../context/LogContext";
 import styles from "../styles/MainScreen.styles";
 
 const MainScreen = () => {
@@ -19,20 +9,15 @@ const MainScreen = () => {
     isAdmin,
     isLockScheduled,
     scheduledRemainingMs,
-    formatScheduledDuration,
     formatRemainingTime,
-    showTimePicker,
-    isTimePickerVisible,
-    timePickerValue,
-    handleTimePickerChange,
+    selectedHours,
+    selectedMinutes,
+    setSelectedHours,
+    setSelectedMinutes,
     cancelScheduledLock,
     scheduleLock,
     lockDevice,
   } = useDeviceLock();
-
-  const { logs } = useLog();
-
-  const [showDebugSection, setShowDebugSection] = useState(false);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -43,35 +28,27 @@ const MainScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
-          <Text style={styles.title}>Hello! 👋</Text>
-          <Text style={styles.name}>Sendil Bala</Text>
-          <Text style={styles.subtitle}>Welcome to my React Native App</Text>
+          <Text style={styles.title}>NoSleep App 😴</Text>
+          <Text style={styles.subtitle}>
+            Schedule your device to lock after a set time
+          </Text>
           {!isAdmin && (
             <Text style={styles.warning}>
               ⚠️ Device admin permission required
             </Text>
           )}
           <TimerSection
-            formatScheduledDuration={formatScheduledDuration}
+            selectedHours={selectedHours}
+            selectedMinutes={selectedMinutes}
+            onHoursChange={setSelectedHours}
+            onMinutesChange={setSelectedMinutes}
             isLockScheduled={isLockScheduled}
             scheduledRemainingMs={scheduledRemainingMs}
             formatRemainingTime={formatRemainingTime}
-            showTimePicker={showTimePicker}
-            isTimePickerVisible={isTimePickerVisible}
-            timePickerValue={timePickerValue}
-            onTimePickerChange={handleTimePickerChange}
             cancelScheduledLock={cancelScheduledLock}
             scheduleLock={scheduleLock}
+            lockDevice={lockDevice}
           />
-          <Button title="Lock Device" onPress={lockDevice} />
-          <View style={styles.debugToggleRow}>
-            <Text style={styles.debugToggleLabel}>Show Debug Logs</Text>
-            <Switch
-              value={showDebugSection}
-              onValueChange={setShowDebugSection}
-            />
-          </View>
-          {showDebugSection && <DebugLogList logs={logs} />}
         </View>
       </ScrollView>
     </SafeAreaView>
