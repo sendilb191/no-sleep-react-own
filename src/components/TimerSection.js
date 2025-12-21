@@ -22,19 +22,22 @@ const TimerSection = ({
 
   const openTimePicker = useCallback(() => {
     setPickerVisible(true);
-  }, []);
+    addLog("Opening time picker");
+  }, [addLog]);
 
   const onTimeChange = useCallback(
     (event, selectedDate) => {
       setPickerVisible(false);
+      if (event?.type === "dismissed") {
+        addLog("Time picker dismissed.");
+        return;
+      }
       if (selectedDate) {
         setSelectedTime(selectedDate);
         onTimePickerChange(event, selectedDate);
         const hours = selectedDate.getHours();
         const minutes = selectedDate.getMinutes().toString().padStart(2, "0");
         addLog(`Time selected: ${hours}:${minutes}`);
-      } else {
-        addLog("Time picker dismissed.");
       }
     },
     [onTimePickerChange, addLog]

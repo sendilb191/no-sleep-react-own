@@ -1,87 +1,129 @@
 # NoSleepApp - React Native Android App
 
-A React Native Android application with automated CI/CD deployment. Build APKs automatically without installing Android SDK!
+A React Native Android application that prevents your device from sleeping with scheduled lock functionality. Features automated CI/CD deployment via GitHub Actions - no Android SDK required locally!
 
 ## Features
 
-- Customizable welcome screen
-- Device lock integration with automatic device administrator prompt
-- Native Android time picker for precise scheduling
-- Timed app lock scheduler (0-24 hours, 1-minute increments)
-- Hermes JavaScript engine for performance
-- Automated APK builds via GitHub Actions
-- No Android Studio required
+- 🔒 **Device Lock Control** - Lock your device on demand or on a schedule
+- ⏰ **Timed Lock Scheduler** - Schedule locks from 0-24 hours with 1-minute precision
+- 📋 **Copy Error Logs** - Built-in debug log viewer with copy functionality
+- 🛡️ **Error Boundary** - Graceful error handling with copy-to-clipboard support
+- ⚡ **Hermes Engine** - Optimized JavaScript performance
+- 🚀 **Automated Builds** - GitHub Actions CI/CD pipeline
+- 📱 **No SDK Required** - Build APKs without Android Studio
 
 ## Quick Start
 
-1. **Clone & Install**
+### 1. Clone & Install
 
-   ```bash
-   git clone https://github.com/yourusername/no-sleep-react-own.git
-   cd no-sleep-react-own
-   npm install
-   ```
+```bash
+git clone https://github.com/sendilb191/mobile-sleeper-andriod-react-native.git
+cd mobile-sleeper-andriod-react-native
+npm install
+```
 
-2. **Customize**
+### 2. Local Development
 
-   Edit `App.js` to personalize your app:
+```bash
+# Validate code (lint + bundle check)
+npm run validate
 
-   ```javascript
-   <Text style={styles.name}>Your Name Here</Text>
-   ```
+# Start Metro bundler
+npm start
+```
 
-3. **Deploy**
+### 3. Build & Deploy
 
-   ```bash
-   git add .
-   git commit -m "Customize app"
-   git push origin main
-   ```
+Simply push to `dev` or `main` branch - GitHub Actions builds the APK automatically:
 
-4. **Download APK**
+```bash
+git add .
+git commit -m "Your changes"
+git push origin dev
+```
 
-   - Go to **Releases** tab in your repository
-   - Download `app-release.apk`
-   - Install on Android device
+### 4. Download APK
 
-## Usage Tips
+- Go to **Actions** tab → Select latest workflow run → Download `app-release` artifact
+- Or check **Releases** tab for tagged releases
+
+## NPM Scripts
+
+| Script                 | Description                   |
+| ---------------------- | ----------------------------- |
+| `npm start`            | Start Metro bundler           |
+| `npm run lint`         | Run ESLint                    |
+| `npm run lint:fix`     | Fix ESLint issues             |
+| `npm run format`       | Format code with Prettier     |
+| `npm run bundle:check` | Verify JS bundle compiles     |
+| `npm run validate`     | Run lint + bundle check       |
+| `npm run precommit`    | Full validation before commit |
+
+## Project Structure
+
+```
+├── App.js                    # App entry point with ErrorBoundary
+├── src/
+│   ├── screens/
+│   │   └── MainScreen.js     # Main UI screen
+│   ├── components/
+│   │   ├── TimerSection.js   # Timer picker UI
+│   │   ├── DebugLogList.js   # Log viewer with copy button
+│   │   └── ErrorBoundary.js  # Error handler with copy support
+│   ├── hooks/
+│   │   └── useDeviceLock.js  # Device lock logic
+│   └── context/
+│       └── LogContext.js     # Logging state management
+├── android/                  # Native Android code
+│   └── app/src/main/java/com/nosleepapp/
+│       ├── DeviceLockModule.java    # Native lock module
+│       ├── DeviceLockPackage.java   # React Native bridge
+│       └── MyDeviceAdminReceiver.java
+└── .github/workflows/
+    └── android.yml           # CI/CD pipeline
+```
+
+## Usage
 
 ### Device Administrator Permission
 
-- The first time you open the app it automatically launches the Android device administrator prompt.
-- Grant the permission so the **Lock Device** button can immediately lock the screen on demand.
-- You can revisit the prompt at any time from the in-app dialog if you previously skipped it.
+The app requires device administrator permission to lock the screen:
+
+1. On first launch, you'll be prompted to grant permission
+2. Grant access to enable the **Lock Device** button
+3. You can re-enable from Settings → Security → Device Administrators
 
 ### Timed App Lock
 
-- Pick anywhere from **0 to 24 hours** plus **0-59 minutes** (1-minute steps) to schedule an automatic device lock.
-- Press **Activate App Lock** to start the countdown; the debug panel shows the live remaining time and any device-admin warnings.
-- Use **Cancel Scheduled Lock** to stop the countdown before it triggers.
+1. Tap **Pick Delay** to select hours and minutes (0-24h, 1-minute precision)
+2. Tap **Activate App Lock** to start countdown
+3. Device will lock automatically when timer reaches zero
+4. Tap **Cancel Scheduled Lock** to abort
 
-## Documentation
+### Debug Logs
 
-- **Setup Guide**: Detailed installation and configuration
-- **CI/CD Pipeline**: How the build process works
-- **Architecture**: App runtime and structure
-- **Troubleshooting**: Common issues and solutions
-- **Customization**: Styling, icons, and branding
+Toggle **Show Debug Logs** to view app activity:
 
-## Local Development
-
-```bash
-# Start Metro bundler
-npm start
-
-# Run on Android device
-npx react-native run-android
-```
+- 📋 **Copy** - Copy all logs to clipboard
+- 🗑️ **Clear** - Clear log history
 
 ## Build Info
 
-- **Build Time:** 2-3 minutes
-- **APK Size:** 15-25 MB
-- **Min Android:** 6.0 (API 23)
-- **Target Android:** 14 (API 34)
+| Property       | Value        |
+| -------------- | ------------ |
+| Build Time     | ~2-3 minutes |
+| APK Size       | ~15-25 MB    |
+| Min Android    | 6.0 (API 23) |
+| Target Android | 14 (API 34)  |
+| React Native   | 0.73.2       |
+
+## Tech Stack
+
+- **React Native** 0.73.2
+- **Hermes** JavaScript Engine
+- **Kotlin** 2.0.21
+- **Gradle** 8.7.3 (AGP)
+- **GitHub Actions** CI/CD
 
 ## License
 
