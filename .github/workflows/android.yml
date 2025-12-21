@@ -55,6 +55,8 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-disabled: true # Disable caching to avoid cache restore warnings
 
       - name: Grant execute permissions to gradlew
         run: chmod +x android/gradlew
@@ -79,13 +81,17 @@ jobs:
           name: app-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Upload Gradle Logs
+      - name: Upload Gradle Logs (if exists)
         uses: actions/upload-artifact@v4
+        if: always()
+        continue-on-error: true
         with:
           name: gradle-logs
-          path: android/build/reports/**/*.log
+          path: android/build/reports/
+          if-no-files-found: ignore
 
       - name: Print Dependency Tree
+        continue-on-error: true
         run: |
           cd android
           gradle dependencies
@@ -103,6 +109,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Debug APK Build
+        continue-on-error: true
         run: |
           cd android
           echo "Listing APK files in release directory..."
@@ -120,4 +127,8 @@ jobs:
           $AAPT_PATH dump badging app/build/outputs/apk/release/app-release.apk || echo "aapt verification failed"
 
           echo "Checking for common issues in logs..."
-          grep -i "error" build/reports/**/*.log || echo "No errors found in Gradle logs"
+          if [ -d "build/reports" ]; then
+            grep -ri "error" build/reports/ || echo "No errors found in Gradle logs"
+          else
+            echo "No Gradle reports directory found (this is normal for clean builds)"
+          fi
