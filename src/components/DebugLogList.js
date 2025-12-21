@@ -1,14 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { useLog } from "../context/LogContext";
 
 const DebugLogList = () => {
   const { logs } = useLog();
-  const [internalLogs, setInternalLogs] = useState(logs);
-
-  useEffect(() => {
-    setInternalLogs(logs);
-  }, [logs]);
 
   return (
     <View style={styles.container}>
@@ -18,10 +13,10 @@ const DebugLogList = () => {
         contentContainerStyle={styles.scrollContent}
         nestedScrollEnabled
       >
-        {internalLogs.length === 0 ? (
+        {logs.length === 0 ? (
           <Text style={styles.logLine}>No logs yet</Text>
         ) : (
-          internalLogs.map((log, index) => (
+          logs.map((log, index) => (
             <Text key={index} style={styles.logLine}>
               {log}
             </Text>

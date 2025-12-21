@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, Button, StyleSheet, AppState } from "react-native";
+import React, { useState, useCallback } from "react";
+import { View, Text, Button, StyleSheet } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import DebugLogList from "../components/DebugLogList";
 import { useLog } from "../context/LogContext";
-import BackgroundTimer from "react-native-background-timer";
 
 const TimerSection = ({
   formatScheduledDuration,
@@ -17,60 +15,30 @@ const TimerSection = ({
 }) => {
   const [selectedTime, setSelectedTime] = useState(timePickerValue);
   const [isPickerVisible, setPickerVisible] = useState(false);
-  const [appState, setAppState] = useState(AppState.currentState);
   const { addLog } = useLog();
 
-  useEffect(() => {
-    const subscription = AppState.addEventListener("change", (nextAppState) => {
-      setAppState(nextAppState);
-    });
+  // Note: The countdown timer logic is handled in useDeviceLock hook.
+  // This component only handles the UI for time selection and display.
 
-    return () => {
-      subscription.remove();
-    };
+  const openTimePicker = useCallback(() => {
+    setPickerVisible(true);
   }, []);
 
-  useEffect(() => {
-    try {
-      if (isLockScheduled) {
-        BackgroundTimer.runBackgroundTimer(() => {
-          try {
-            // Logic to handle the timer countdown
-            if (scheduledRemainingMs <= 0) {
-              BackgroundTimer.stopBackgroundTimer();
-              scheduleLock();
-            }
-          } catch (error) {
-            addLog(`Error in background timer logic: ${error.message}`);
-          }
-        }, 1000); // Run every second
-
-        return () => {
-          BackgroundTimer.stopBackgroundTimer();
-          addLog("Background timer stopped.");
-        };
+  const onTimeChange = useCallback(
+    (event, selectedDate) => {
+      setPickerVisible(false);
+      if (selectedDate) {
+        setSelectedTime(selectedDate);
+        onTimePickerChange(event, selectedDate);
+        const hours = selectedDate.getHours();
+        const minutes = selectedDate.getMinutes().toString().padStart(2, "0");
+        addLog(`Time selected: ${hours}:${minutes}`);
+      } else {
+        addLog("Time picker dismissed.");
       }
-    } catch (error) {
-      addLog(`Error initializing background timer: ${error.message}`);
-    }
-  }, [isLockScheduled, scheduledRemainingMs]);
-
-  const openTimePicker = () => {
-    setPickerVisible(true);
-  };
-
-  const onTimeChange = (event, selectedDate) => {
-    setPickerVisible(false);
-    if (selectedDate) {
-      setSelectedTime(selectedDate);
-      onTimePickerChange(null, selectedDate);
-      addLog(
-        `Time selected: ${selectedDate.getHours()}:${selectedDate.getMinutes()}`
-      );
-    } else {
-      addLog("Time picker dismissed.");
-    }
-  };
+    },
+    [onTimePickerChange, addLog]
+  );
 
   return (
     <View style={styles.container}>
@@ -108,7 +76,6 @@ const TimerSection = ({
           onPress={isLockScheduled ? cancelScheduledLock : scheduleLock}
         />
       </View>
-      <DebugLogList />
     </View>
   );
 };

@@ -1,3 +1,19 @@
+<#
+.SYNOPSIS
+    Downloads and installs Gradle distribution locally.
+
+.DESCRIPTION
+    NOTE: This script is OPTIONAL for most developers.
+    APK builds are handled automatically by GitHub Actions CI/CD.
+    
+    For local development, just run:
+      npm start
+    
+    Push to main/dev branch to trigger automatic APK builds in GitHub.
+    
+    Only use this script if you need to build APKs locally.
+#>
+
 param(
   [string]$Version = '8.9'
 )
