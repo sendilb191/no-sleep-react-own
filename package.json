@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "postinstall": "node scripts/fix-namespaces.js",
     "android": "react-native run-android",
     "start": "react-native start",
     "test": "jest",
