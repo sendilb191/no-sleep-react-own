@@ -30,12 +30,6 @@ const useDeviceLock = () => {
     hasShownOneMinuteWarning.current = false;
   }, [stopBackgroundTimer]);
 
-  const showOneMinuteWarning = useCallback(() => {
-    if (DeviceLock && DeviceLock.showToast) {
-      DeviceLock.showToast("⚠️ Device will lock in 1 minute!");
-    }
-  }, []);
-
   const testToast = useCallback(() => {
     if (DeviceLock && DeviceLock.showToast) {
       DeviceLock.showToast("🔔 Toast notification is working!");
@@ -185,10 +179,26 @@ const useDeviceLock = () => {
     setScheduledRemainingMs(totalMs);
     setIsLockScheduled(true);
 
+    const ONE_MINUTE_MS = 60 * 1000;
+
     // Use BackgroundTimer for background execution
     backgroundTimerRef.current = BackgroundTimer.setInterval(() => {
       setScheduledRemainingMs((prev) => {
         const next = Math.max(prev - 1000, 0);
+
+        // Check for 1-minute warning inside the timer callback (works in background)
+        if (
+          next <= ONE_MINUTE_MS &&
+          next > 0 &&
+          !hasShownOneMinuteWarning.current
+        ) {
+          hasShownOneMinuteWarning.current = true;
+          // Call showToast directly from native module
+          if (DeviceLock && DeviceLock.showToast) {
+            DeviceLock.showToast("⚠️ Device will lock in 1 minute!");
+          }
+        }
+
         return next;
       });
     }, 1000);
@@ -245,20 +255,6 @@ const useDeviceLock = () => {
       lockDevice();
     }
   }, [isLockScheduled, lockDevice, scheduledRemainingMs, stopBackgroundTimer]);
-
-  // Show warning when 1 minute remaining (only if timer was > 1 min)
-  useEffect(() => {
-    const ONE_MINUTE_MS = 60 * 1000;
-    if (
-      isLockScheduled &&
-      scheduledRemainingMs <= ONE_MINUTE_MS &&
-      scheduledRemainingMs > 0 &&
-      !hasShownOneMinuteWarning.current
-    ) {
-      hasShownOneMinuteWarning.current = true;
-      showOneMinuteWarning();
-    }
-  }, [isLockScheduled, scheduledRemainingMs, showOneMinuteWarning]);
 
   // Cleanup on unmount
   useEffect(() => {
