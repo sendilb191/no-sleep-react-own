@@ -5,6 +5,7 @@ import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.widget.Toast;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -139,5 +140,17 @@ public class DeviceLockModule extends ReactContextBaseJavaModule {
             emitLog("isAdminActive: error - " + e.getMessage());
             promise.reject("CHECK_ADMIN_FAILED", "Failed to check admin status: " + e.getMessage(), e);
         }
+    }
+
+    @ReactMethod
+    public void showToast(String message) {
+        UiThreadUtil.runOnUiThread(() -> {
+            try {
+                Toast.makeText(reactContext, message, Toast.LENGTH_LONG).show();
+                emitLog("showToast: " + message);
+            } catch (Exception e) {
+                emitLog("showToast error: " + e.getMessage());
+            }
+        });
     }
 }

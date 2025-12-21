@@ -7,6 +7,7 @@ const { DeviceLock } = NativeModules;
 const useDeviceLock = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const hasPromptedForAdmin = useRef(false);
+  const hasShownOneMinuteWarning = useRef(false);
   const [selectedHours, setSelectedHours] = useState(0);
   const [selectedMinutes, setSelectedMinutes] = useState(0);
   const [isLockScheduled, setIsLockScheduled] = useState(false);
@@ -24,7 +25,14 @@ const useDeviceLock = () => {
     stopBackgroundTimer();
     setIsLockScheduled(false);
     setScheduledRemainingMs(0);
+    hasShownOneMinuteWarning.current = false;
   }, [stopBackgroundTimer]);
+
+  const showOneMinuteWarning = useCallback(() => {
+    if (DeviceLock && DeviceLock.showToast) {
+      DeviceLock.showToast("⚠️ Device will lock in 1 minute!");
+    }
+  }, []);
 
   const checkAdminStatus = useCallback(async () => {
     if (DeviceLock && DeviceLock.isAdminActive) {
@@ -127,6 +135,7 @@ const useDeviceLock = () => {
     }
 
     stopBackgroundTimer();
+    hasShownOneMinuteWarning.current = totalMinutes <= 1; // Don't show warning if timer is 1 min or less
 
     const totalMs = totalMinutes * 60 * 1000;
     setScheduledRemainingMs(totalMs);
@@ -178,6 +187,20 @@ const useDeviceLock = () => {
       lockDevice();
     }
   }, [isLockScheduled, lockDevice, scheduledRemainingMs, stopBackgroundTimer]);
+
+  // Show warning when 1 minute remaining (only if timer was > 1 min)
+  useEffect(() => {
+    const ONE_MINUTE_MS = 60 * 1000;
+    if (
+      isLockScheduled &&
+      scheduledRemainingMs <= ONE_MINUTE_MS &&
+      scheduledRemainingMs > 0 &&
+      !hasShownOneMinuteWarning.current
+    ) {
+      hasShownOneMinuteWarning.current = true;
+      showOneMinuteWarning();
+    }
+  }, [isLockScheduled, scheduledRemainingMs, showOneMinuteWarning]);
 
   // Cleanup on unmount
   useEffect(() => {
