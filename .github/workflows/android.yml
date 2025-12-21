@@ -41,8 +41,14 @@ jobs:
 
       - name: Verify React Native installation
         run: |
-          ls -la node_modules/@react-native/
-          test -f node_modules/@react-native/gradle-plugin/settings.gradle && echo "Gradle plugin found" || echo "Gradle plugin NOT found"
+          echo "=== React Native Android Maven Repository ==="
+          ls -la node_modules/react-native/android/ || echo "No android maven folder"
+          echo ""
+          echo "=== Checking for react-android artifacts ==="
+          find node_modules/react-native/android -name "*.pom" 2>/dev/null | head -10 || echo "No .pom files found"
+          echo ""
+          echo "=== @react-native packages ==="
+          ls -la node_modules/@react-native/ || echo "No @react-native packages"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4

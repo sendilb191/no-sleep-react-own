@@ -23,30 +23,22 @@ allprojects {
         google()
         mavenCentral()
         maven { url "https://www.jitpack.io" }
-        
-        // React Native maven repository (required for 0.71+)
-        maven {
-            url("$rootDir/../node_modules/react-native/android")
-        }
-        
-        exclusiveContent {
-            // React Native artifacts from npm
-            filter {
-                includeGroup "com.facebook.react"
-            }
-            forRepository {
-                maven {
-                    url("$rootDir/../node_modules/react-native/android")
-                }
-            }
-        }
     }
     
-    // Force all react-native dependencies to use our version
+    // Handle dependencies from older libraries
     configurations.all {
         resolutionStrategy {
+            // Force our react-native version
             force "com.facebook.react:react-android:${rootProject.ext.reactNativeVersion}"
             force "com.facebook.react:hermes-android:${rootProject.ext.reactNativeVersion}"
+            
+            // Redirect old react-native artifact name to new react-android
+            eachDependency { details ->
+                if (details.requested.group == 'com.facebook.react' && details.requested.name == 'react-native') {
+                    details.useTarget("com.facebook.react:react-android:${rootProject.ext.reactNativeVersion}")
+                    details.because("react-native renamed to react-android in 0.71+")
+                }
+            }
         }
     }
 }
