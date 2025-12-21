@@ -1,16 +1,23 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 
 const LogContext = createContext();
 
 export const LogProvider = ({ children }) => {
   const [logs, setLogs] = useState([]);
 
-  const addLog = (message) => {
-    setLogs((prevLogs) => [...prevLogs, message]);
-  };
+  const addLog = useCallback((message) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setLogs((prevLogs) =>
+      [`[${timestamp}] ${message}`, ...prevLogs].slice(0, 100)
+    );
+  }, []);
+
+  const clearLogs = useCallback(() => {
+    setLogs([]);
+  }, []);
 
   return (
-    <LogContext.Provider value={{ logs, addLog }}>
+    <LogContext.Provider value={{ logs, addLog, clearLogs }}>
       {children}
     </LogContext.Provider>
   );
